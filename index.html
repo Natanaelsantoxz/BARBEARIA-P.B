@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="pt-BR"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Barbearia P.B — Agende seu horário</title>
+<link rel="stylesheet" href="style.css">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+</head><body><main>
+<img class="logo" src="logo.jpeg" alt="Barbearia P.B">
+<section><h2>1. Escolha o serviço</h2><div id="svcs"></div></section>
+<section><h2>2. Escolha o dia e o horário</h2>
+<label for="dia">Dia</label><input type="date" id="dia">
+<div id="slots" class="slots" style="margin-top:1rem"></div><div id="info" class="msg"></div></section>
+<section><h2>3. Seus dados</h2>
+<div id="resumo" class="resumo" hidden></div>
+<label for="nome">Nome</label><input id="nome" autocomplete="name">
+<label for="tel">WhatsApp</label><input id="tel" type="tel" autocomplete="tel" placeholder="(19) 90000-0000">
+<button class="main" id="ok" disabled>Confirmar e enviar no WhatsApp</button><div id="msg" class="msg" role="status"></div></section>
+<footer>Qualidade e Tradição · <a href="admin.html">Área do profissional</a></footer>
+</main>
+<script src="config.js"></script>
+<script>
+let svc=null,hora=null,ocupados=[],zap="";
+db.from("configuracoes").select("whatsapp").eq("id",1).maybeSingle().then(r=>{zap=(r.data&&r.data.whatsapp)||"";});
+const $=id=>document.getElementById(id);
+const hoje=new Date(Date.now()-new Date().getTimezoneOffset()*6e4).toISOString().slice(0,10);
+$("dia").min=$("dia").value=hoje;
+$("svcs").innerHTML=SERVICOS.map((s,i)=>`<button class="svc" aria-pressed="false" data-i="${i}"><span class="n">${s.nome}</span><span class="d">${s.dur} min</span><b>${brl(s.preco)}</b></button>`).join("");
+$("svcs").onclick=e=>{const b=e.target.closest(".svc");if(!b)return;svc=SERVICOS[b.dataset.i];hora=null;
+  document.querySelectorAll(".svc").forEach(x=>x.setAttribute("aria-pressed",x===b));render();};
+async function carregar(){
+  const {data,error}=await db.rpc("horarios_ocupados",{dia:$("dia").value});
+  ocupados=error?[]:data.map(o=>[toMin(o.hora),toMin(o.hora)+o.duracao_min]);
+  if(error)$("info").textContent="Não foi possível carregar os horários.";
+  hora=null;render();}
+function render(){
+  const d=new Date($("dia").value+"T00:00");$("info").textContent="";
+  if(!svc){$("slots").innerHTML="";$("info").textContent="Escolha um serviço para ver os horários.";return upd();}
+  if(CONFIG.DIAS_FECHADOS.includes(d.getDay())){$("slots").innerHTML="";$("info").textContent="Fechado neste dia. Escolha outra data.";return upd();}
+  const agora=new Date(),ehHoje=$("dia").value===hoje,nowM=agora.getHours()*60+agora.getMinutes();
+  let h="";
+  for(let m=toMin(CONFIG.ABRE);m+svc.dur<=toMin(CONFIG.FECHA);m+=CONFIG.PASSO){
+    const off=(ehHoje&&m<=nowM)||ocupados.some(([a,b])=>m<b&&a<m+svc.dur);
+    h+=`<button class="slot" aria-pressed="${hora===toHM(m)}" data-h="${toHM(m)}" ${off?"disabled":""}>${toHM(m)}</button>`;}
+  $("slots").innerHTML=h||"";upd();}
+$("slots").onclick=e=>{const b=e.target.closest(".slot");if(!b||b.disabled)return;hora=b.dataset.h;render();};
+function upd(){
+  const r=$("resumo");r.hidden=!svc;if(svc)r.textContent=`${svc.nome} · ${brl(svc.preco)}`+(hora?` · ${$("dia").value.split("-").reverse().join("/")} às ${hora}`:"");$("ok").disabled=!(svc&&hora&&$("nome").value.trim().length>1&&$("tel").value.replace(/\D/g,"").length>=10);}
+["nome","tel"].forEach(i=>$(i).oninput=upd);$("dia").onchange=carregar;
+$("ok").onclick=async()=>{
+  $("ok").disabled=true;$("msg").className="msg";$("msg").textContent="Enviando...";
+  const {error}=await db.from("agendamentos").insert({nome:$("nome").value.trim(),telefone:$("tel").value.trim(),
+    servico:svc.nome,preco:svc.preco,data:$("dia").value,hora,duracao_min:svc.dur});
+  if(error){$("msg").className="msg bad";$("msg").textContent=error.message.includes("indispon")?"Esse horário acabou de ser ocupado. Escolha outro.":"Não foi possível agendar. Tente novamente.";await carregar();return;}
+  const dataBR=$("dia").value.split("-").reverse().join("/");
+  const texto=`Olá! Quero confirmar meu agendamento na Barbearia P.B:\n\n*Nome:* ${$("nome").value.trim()}\n*Serviço:* ${svc.nome}\n*Valor:* ${brl(svc.preco)}\n*Horário:* ${dataBR} às ${hora}`;
+  let n=zap.replace(/\D/g,"");if(n&&n.length<=11)n="55"+n;
+  $("msg").className="msg ok";
+  if(!n){$("msg").textContent=`Agendado para ${dataBR} às ${hora}! (O WhatsApp do profissional ainda não foi cadastrado.)`;}
+  else{const url=`https://wa.me/${n}?text=${encodeURIComponent(texto)}`;
+    $("msg").innerHTML=`Agendado para ${dataBR} às ${hora}! Abrindo o WhatsApp...<a class="wa" href="${url}">Enviar para o WhatsApp</a>`;
+    setTimeout(()=>{location.href=url;},800);}
+  hora=null;await carregar();};
+carregar();
+</script></body></html>
