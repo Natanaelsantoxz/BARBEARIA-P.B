@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="pt-BR"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Barbearia P.B — Área do profissional</title>
+<link rel="stylesheet" href="style.css">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+</head><body><main>
+<img class="logo" src="logo.jpeg" alt="Barbearia P.B">
+<section id="login"><h2>Área do profissional</h2>
+<label for="em">E-mail</label><input id="em" type="email" autocomplete="username">
+<label for="pw">Senha</label><input id="pw" type="password" autocomplete="current-password">
+<button class="main" id="entrar">Entrar</button><div id="lmsg" class="msg bad" role="alert"></div></section>
+<section id="painel" hidden>
+<div class="row"><h2 style="margin:0">Agenda</h2><button class="sm" id="sair">Sair</button></div>
+<label for="zap">WhatsApp que recebe os agendamentos</label>
+<div class="row" style="border:0;padding:0"><input id="zap" type="tel" placeholder="(19) 90000-0000"><button class="sm" id="salvaZap">Salvar</button></div>
+<div id="zmsg" class="msg ok"></div>
+<label for="dia">Dia</label><input type="date" id="dia">
+<div id="total" class="msg"></div><div id="lista"></div></section>
+<footer><a href="index.html">Voltar ao site do cliente</a></footer>
+</main>
+<script src="config.js"></script>
+<script>
+const $=id=>document.getElementById(id);
+$("dia").value=new Date(Date.now()-new Date().getTimezoneOffset()*6e4).toISOString().slice(0,10);
+async function checar(){
+  const {data:{session}}=await db.auth.getSession();
+  $("login").hidden=!!session;$("painel").hidden=!session;if(session){listar();carregaZap();}}
+$("entrar").onclick=async()=>{
+  const {error}=await db.auth.signInWithPassword({email:$("em").value.trim(),password:$("pw").value});
+  $("lmsg").textContent=error?"E-mail ou senha incorretos.":"";if(!error)checar();};
+$("sair").onclick=async()=>{await db.auth.signOut();checar();};
+$("dia").onchange=listar;
+async function carregaZap(){const {data}=await db.from("configuracoes").select("whatsapp").eq("id",1).maybeSingle();$("zap").value=(data&&data.whatsapp)||"";}
+$("salvaZap").onclick=async()=>{const {error}=await db.from("configuracoes").upsert({id:1,whatsapp:$("zap").value.trim()});
+  $("zmsg").className="msg "+(error?"bad":"ok");$("zmsg").textContent=error?"Não foi possível salvar.":"WhatsApp salvo!";};
+async function listar(){
+  const {data,error}=await db.from("agendamentos").select("*").eq("data",$("dia").value).order("hora");
+  if(error){$("lista").textContent="Sem permissão ou erro ao carregar.";return;}
+  const ativos=data.filter(a=>a.status!=="cancelado");
+  $("total").textContent=`${ativos.length} cliente(s) · ${brl(ativos.reduce((s,a)=>s+Number(a.preco),0))} previstos`;
+  $("lista").innerHTML=data.length?data.map(a=>`<div class="row ${a.status}"><div><b>${a.hora.slice(0,5)}</b> ${esc(a.nome)}
+    <small>${esc(a.servico)} · ${brl(Number(a.preco))} · <a style="color:inherit" href="https://wa.me/55${a.telefone.replace(/\D/g,"")}">${esc(a.telefone)}</a></small></div>
+    <div>${a.status==="agendado"?`<button class="sm" onclick="mudar('${a.id}','concluido')">Concluir</button> <button class="sm" onclick="mudar('${a.id}','cancelado')">Cancelar</button>`:a.status}</div></div>`).join(""):"<p>Nenhum agendamento neste dia.</p>";}
+const esc=s=>String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+async function mudar(id,status){await db.from("agendamentos").update({status}).eq("id",id);listar();}
+checar();
+</script></body></html>

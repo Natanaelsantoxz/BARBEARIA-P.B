@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Inventário</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+:root{--bg:#f6f7f9;--card:#fff;--tx:#1c2430;--mut:#6b7686;--bd:#e2e6ec;--pri:#1f6feb;--ok:#1a7f4b;--warn:#b7791f;--bad:#c93c37;--okbg:#e3f5ea;--warnbg:#fdf3dc;--badbg:#fbe4e3;
+box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#12161c;--card:#1b212a;--tx:#e8ecf2;--mut:#93a0b1;--bd:#2c3542;--pri:#5b9bff;--ok:#5fd394;--warn:#f0c064;--bad:#ff8a84;--okbg:#173626;--warnbg:#3a2f14;--badbg:#3f1f1e}}
+:root[data-theme="dark"]{--bg:#12161c;--card:#1b212a;--tx:#e8ecf2;--mut:#93a0b1;--bd:#2c3542;--pri:#5b9bff;--ok:#5fd394;--warn:#f0c064;--bad:#ff8a84;--okbg:#173626;--warnbg:#3a2f14;--badbg:#3f1f1e}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--tx);font:15px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+.wrap{max-width:1000px;margin:0 auto;padding:20px 16px 48px}
+h1{font-size:22px;margin:0 0 4px}
+.sub{color:var(--mut);margin:0 0 18px}
+.card{background:var(--card);border:1px solid var(--bd);border-radius:12px;padding:16px;margin-bottom:16px}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin-bottom:16px}
+.stat{background:var(--card);border:1px solid var(--bd);border-radius:12px;padding:12px 14px}
+.stat b{display:block;font-size:24px}
+.stat span{color:var(--mut);font-size:13px}
+.form{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px;align-items:end}
+label{font-size:12px;color:var(--mut);display:block;margin-bottom:3px}
+input{width:100%;padding:9px 10px;border:1px solid var(--bd);border-radius:8px;background:var(--bg);color:var(--tx);font:inherit}
+input:focus{outline:2px solid var(--pri);outline-offset:-1px}
+button{padding:9px 14px;border-radius:8px;border:1px solid var(--bd);background:var(--card);color:var(--tx);font:inherit;cursor:pointer}
+button.p{background:var(--pri);border-color:var(--pri);color:#fff}
+button:hover{filter:brightness(.96)}
+.bar{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px;align-items:center}
+.bar .grow{flex:1;min-width:160px}
+.tw{overflow-x:auto}
+table{width:100%;border-collapse:collapse;min-width:640px}
+th,td{text-align:left;padding:8px 8px;border-bottom:1px solid var(--bd);white-space:nowrap}
+th{font-size:12px;color:var(--mut);font-weight:600}
+td input{padding:5px 6px;min-width:70px}
+td.n input{width:84px}
+.tag{padding:2px 8px;border-radius:99px;font-size:12px;font-weight:600}
+.ok{background:var(--okbg);color:var(--ok)}.warn{background:var(--warnbg);color:var(--warn)}.bad{background:var(--badbg);color:var(--bad)}
+.x{color:var(--bad);border:none;background:none;font-size:18px;padding:2px 8px}
+.empty{text-align:center;color:var(--mut);padding:28px 0}
+.msg{font-size:13px;color:var(--mut);margin-top:8px;min-height:18px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>📦 Inventário</h1>
+  <p class="sub">Cadastre produtos, controle quantidade, perdas e validade. Importe e exporte em Excel.</p>
+
+  <div class="stats">
+    <div class="stat"><b id="sProd">0</b><span>Produtos</span></div>
+    <div class="stat"><b id="sQtd">0</b><span>Estoque atual (qtd − perdas)</span></div>
+    <div class="stat"><b id="sPer">0</b><span>Total de perdas</span></div>
+    <div class="stat"><b id="sVen">0</b><span>Vencidos / vencendo em 30 dias</span></div>
+  </div>
+
+  <div class="card">
+    <div class="form">
+      <div><label>Produto</label><input id="fNome" placeholder="Ex.: Arroz 5kg"></div>
+      <div><label>Quantidade</label><input id="fQtd" type="number" min="0" value="0"></div>
+      <div><label>Perdas</label><input id="fPer" type="number" min="0" value="0"></div>
+      <div><label>Validade</label><input id="fVal" type="date"></div>
+      <div><button class="p" id="add" style="width:100%">Adicionar</button></div>
+    </div>
+    <div class="msg" id="msgAdd"></div>
+  </div>
+
+  <div class="card">
+    <div class="bar">
+      <input class="grow" id="busca" placeholder="Buscar produto...">
+      <button id="imp">⬆ Importar Excel</button>
+      <button id="exp" class="p">⬇ Exportar Excel</button>
+      <button id="modelo">Modelo</button>
+      <button id="limpar">Limpar tudo</button>
+      <input type="file" id="file" accept=".xlsx,.xls,.csv" hidden>
+    </div>
+    <div class="tw">
+      <table>
+        <thead><tr><th>Produto</th><th>Quantidade</th><th>Perdas</th><th>Estoque</th><th>Validade</th><th>Situação</th><th></th></tr></thead>
+        <tbody id="rows"></tbody>
+      </table>
+    </div>
+    <div class="msg" id="msg"></div>
+  </div>
+</div>
+
+<script>
+const $ = id => document.getElementById(id);
+let items = [];
+let dl = null;
+
+// ---------- armazenamento local ----------
+function load(){ try{ items = JSON.parse(localStorage.getItem('inv')||'[]'); }catch(e){ items=[]; } }
+function save(){ try{ localStorage.setItem('inv', JSON.stringify(items)); }catch(e){} }
+
+// ---------- utilidades ----------
+const uid = () => Math.random().toString(36).slice(2,9);
+const num = v => { const n = Number(String(v).replace(',','.')); return isFinite(n) && n>0 ? n : 0; };
+function fmtBR(iso){ if(!iso) return ''; const [y,m,d]=iso.split('-'); return `${d}/${m}/${y}`; }
+function toISO(v){
+  if(v==null || v==='') return '';
+  if(v instanceof Date && !isNaN(v)) return new Date(v.getTime()-v.getTimezoneOffset()*60000).toISOString().slice(0,10);
+  if(typeof v==='number'){ const d=new Date(Math.round((v-25569)*86400*1000)); return d.toISOString().slice(0,10); }
+  const s=String(v).trim(); let m;
+  if((m=s.match(/^(\d{4})-(\d{2})-(\d{2})/))) return `${m[1]}-${m[2]}-${m[3]}`;
+  if((m=s.match(/^(\d{1,2})[\/\-.](\d{1,2})[\/\-.](\d{2,4})$/))){ let y=m[3]; if(y.length==2) y='20'+y; return `${y}-${m[2].padStart(2,'0')}-${m[1].padStart(2,'0')}`; }
+  return '';
+}
+function status(it){
+  if(!it.validade) return ['Sem validade','ok'];
+  const hoje=new Date(); hoje.setHours(0,0,0,0);
+  const d=new Date(it.validade+'T00:00:00');
+  const dias=Math.round((d-hoje)/86400000);
+  if(dias<0) return ['Vencido','bad'];
+  if(dias<=30) return [`Vence em ${dias}d`,'warn'];
+  return ['Em dia','ok'];
+}
+const norm = s => String(s).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').trim();
+const esc = s => String(s).replace(/[&<>"]/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+
+// ---------- render ----------
+function render(){
+  const q = norm($('busca').value);
+  const list = items.filter(i=>norm(i.nome).includes(q));
+  $('rows').innerHTML = list.length ? list.map(i=>{
+    const [t,c]=status(i);
+    return `<tr data-id="${i.id}">
+      <td><input data-f="nome" value="${esc(i.nome)}"></td>
+      <td class="n"><input data-f="qtd" type="number" min="0" value="${i.qtd}"></td>
+      <td class="n"><input data-f="perdas" type="number" min="0" value="${i.perdas}"></td>
+      <td><b>${Math.max(0,i.qtd-i.perdas)}</b></td>
+      <td><input data-f="validade" type="date" value="${i.validade}"></td>
+      <td><span class="tag ${c}">${t}</span></td>
+      <td><button class="x" data-del title="Remover">×</button></td></tr>`;
+  }).join('') : `<tr><td colspan="7" class="empty">Nenhum produto. Adicione acima ou importe um Excel.</td></tr>`;
+  $('sProd').textContent = items.length;
+  $('sQtd').textContent = items.reduce((a,i)=>a+Math.max(0,i.qtd-i.perdas),0);
+  $('sPer').textContent = items.reduce((a,i)=>a+i.perdas,0);
+  $('sVen').textContent = items.filter(i=>['bad','warn'].includes(status(i)[1])).length;
+}
+function say(t,id='msg'){ $(id).textContent=t; }
+
+// ---------- adicionar / editar ----------
+$('add').onclick = () => {
+  const nome=$('fNome').value.trim();
+  if(!nome){ say('Informe o nome do produto.','msgAdd'); return; }
+  items.push({id:uid(),nome,qtd:num($('fQtd').value),perdas:num($('fPer').value),validade:$('fVal').value});
+  $('fNome').value='';$('fQtd').value=0;$('fPer').value=0;$('fVal').value='';
+  say('','msgAdd'); save(); render(); $('fNome').focus();
+};
+$('fNome').addEventListener('keydown',e=>{ if(e.key==='Enter') $('add').click(); });
+$('busca').oninput = render;
+
+$('rows').addEventListener('change', e=>{
+  const tr=e.target.closest('tr'); if(!tr||!e.target.dataset.f) return;
+  const it=items.find(i=>i.id===tr.dataset.id); if(!it) return;
+  const f=e.target.dataset.f, v=e.target.value;
+  it[f] = (f==='qtd'||f==='perdas') ? num(v) : (f==='nome' ? v.trim() : v);
+  save(); render();
+});
+$('rows').addEventListener('click', e=>{
+  if(!e.target.hasAttribute('data-del')) return;
+  const id=e.target.closest('tr').dataset.id;
+  items=items.filter(i=>i.id!==id); save(); render();
+});
+$('limpar').onclick = () => {
+  if(!items.length) return;
+  if($('limpar').dataset.c==='1'){ items=[]; save(); render(); $('limpar').textContent='Limpar tudo'; $('limpar').dataset.c=''; say('Inventário limpo.'); return; }
+  $('limpar').dataset.c='1'; $('limpar').textContent='Clique de novo para confirmar';
+  setTimeout(()=>{ $('limpar').dataset.c=''; $('limpar').textContent='Limpar tudo'; },3500);
+};
+
+// ---------- Excel: importar ----------
+$('imp').onclick = () => $('file').click();
+$('file').onchange = async e => {
+  const f=e.target.files[0]; if(!f) return;
+  try{
+    const wb = XLSX.read(await f.arrayBuffer(), {type:'array', cellDates:true});
+    const rows = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], {defval:''});
+    let add=0, upd=0;
+    rows.forEach(r=>{
+      const k={}; Object.keys(r).forEach(c=>k[norm(c)]=r[c]);
+      const nome = String(k['produto']||k['nome']||k['item']||k['descricao']||'').trim();
+      if(!nome) return;
+      const qtd=num(k['quantidade']||k['qtd']||k['estoque']||0);
+      const perdas=num(k['perdas']||k['perda']||0);
+      const validade=toISO(k['validade']||k['vencimento']||k['data de validade']||'');
+      const ex = items.find(i=>norm(i.nome)===norm(nome) && i.validade===validade);
+      if(ex){ ex.qtd=qtd; ex.perdas=perdas; upd++; }
+      else { items.push({id:uid(),nome,qtd,perdas,validade}); add++; }
+    });
+    save(); render();
+    say(`Importação concluída: ${add} novo(s), ${upd} atualizado(s).`);
+  }catch(err){ say('Não consegui ler esse arquivo. Use .xlsx, .xls ou .csv com as colunas Produto, Quantidade, Perdas e Validade.'); }
+  e.target.value='';
+};
+
+// ---------- Excel: exportar ----------
+async function baixar(rows, nome){
+  const ws = XLSX.utils.json_to_sheet(rows, {header:['Produto','Quantidade','Perdas','Estoque','Validade']});
+  ws['!cols']=[{wch:32},{wch:12},{wch:10},{wch:10},{wch:14}];
+  const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, 'Inventário');
+  XLSX.writeFile(wb, nome); say('Arquivo baixado: '+nome);
+}
+$('exp').onclick = () => {
+  if(!items.length){ say('Não há produtos para exportar.'); return; }
+  baixar(items.map(i=>({Produto:i.nome,Quantidade:i.qtd,Perdas:i.perdas,Estoque:Math.max(0,i.qtd-i.perdas),Validade:fmtBR(i.validade)})), 'inventario.xlsx');
+};
+$('modelo').onclick = () => baixar([{Produto:'Exemplo: Leite 1L',Quantidade:50,Perdas:2,Estoque:48,Validade:'31/12/2026'}], 'modelo-inventario.xlsx');
+
+// ---------- init ----------
+load(); render();
+</script>
+</body>
+</html>
