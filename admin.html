@@ -14,7 +14,8 @@
 <section id="login">
   <h2>Área do profissional</h2>
   <label for="pw">Senha do profissional</label>
-  <input id="pw" type="password" autocomplete="current-password"
+  <input id="pw" type="password"
+         autocomplete="current-password"
          placeholder="Digite sua senha">
   <button class="main" id="entrar">Entrar</button>
   <div id="lmsg" class="msg bad" role="alert"></div>
@@ -44,24 +45,36 @@
 
 <script src="config.js"></script>
 <script>
+"use strict";
+
 const $ = id => document.getElementById(id);
+const CONTA_INTERNA = "barbeariapb11@gmail.com";
 
-// Conta interna usada pelo Supabase.
-// O profissional não precisa digitar o e-mail.
-const { error } = await db.auth.signInWithPassword({
-  email: CONTA_INTERNA,
-  password: senha
-});
+const hojeLocal = () => {
+  const agora = new Date();
+  agora.setMinutes(agora.getMinutes() - agora.getTimezoneOffset());
+  return agora.toISOString().slice(0, 10);
+};
 
-$("dia").value = new Date(
-  Date.now() - new Date().getTimezoneOffset() * 60000
-).toISOString().slice(0, 10);
+$("dia").value = hojeLocal();
+
+const esc = valor => String(valor ?? "").replace(/[&<>"']/g, c => ({
+  "&": "&amp;",
+  "<": "&lt;",
+  ">": "&gt;",
+  '"': "&quot;",
+  "'": "&#39;"
+}[c]));
+
+function mostrarErroLogin(mensagem) {
+  $("lmsg").textContent = mensagem;
+}
 
 async function checar() {
   const { data, error } = await db.auth.getSession();
 
   if (error) {
-    $("lmsg").textContent = "Erro ao verificar o acesso.";
+    mostrarErroLogin("Erro ao verificar o acesso. Tente novamente.");
     return;
   }
 
@@ -70,8 +83,7 @@ async function checar() {
   $("painel").hidden = !session;
 
   if (session) {
-    listar();
-    carregaZap();
+    await Promise.all([listar(), carregaZap()]);
   }
 }
 
@@ -79,41 +91,53 @@ $("entrar").onclick = async () => {
   const senha = $("pw").value;
 
   if (!senha) {
-    $("lmsg").textContent = "Digite sua senha.";
+    mostrarErroLogin("Digite sua senha.");
     return;
   }
 
   $("entrar").disabled = true;
-  $("lmsg").textContent = "Verificando senha...";
+  mostrarErroLogin("Verificando acesso...");
 
-  const { error } = await db.auth.signInWithPassword({
-    email: CONTA_INTERNA,
-    password: senha
-  });
+  try {
+    const { error } = await db.auth.signInWithPassword({
+      email: CONTA_INTERNA,
+      password: senha
+    });
 
-  $("entrar").disabled = false;
+    if (error) {
+      mostrarErroLogin(
+        "Senha incorreta ou acesso indisponível. Verifique a configuração."
+      );
+      return;
+    }
 
-  if (error) {
-    $("lmsg").textContent =
-      "Senha incorreta ou acesso indisponível. Verifique a configuração.";
-    return;
+    $("pw").value = "";
+    $("lmsg").textContent = "";
+    await checar();
+  } catch (erro) {
+    mostrarErroLogin("Não foi possível conectar. Verifique sua internet.");
+  } finally {
+    $("entrar").disabled = false;
   }
-
-  $("pw").value = "";
-  $("lmsg").textContent = "";
-  await checar();
 };
 
-$("pw").addEventListener("keydown", e => {
-  if (e.key === "Enter") $("entrar").click();
+$("pw").addEventListener("keydown", evento => {
+  if (evento.key === "Enter") $("entrar").click();
 });
 
 $("sair").onclick = async () => {
-  await db.auth.signOut();
-  await checar();
+  const { error } = await db.auth.signOut();
+
+  if (error) {
+    alert("Não foi possível sair. Tente novamente.");
+    return;
+  }
+
+  $("login").hidden = false;
+  $("painel").hidden = true;
 };
 
-$("dia").onchange = listar;
+$("dia").onchange = () => listar();
 
 async function carregaZap() {
   const { data, error } = await db
@@ -128,76 +152,90 @@ async function carregaZap() {
     return;
   }
 
-  $("zap").value = (data && data.whatsapp) || "";
+  $("zap").value = data?.whatsapp || "";
 }
 
 $("salvaZap").onclick = async () => {
-  const { error } = await db.from("configuracoes").upsert({
-    id: 1,
-    whatsapp: $("zap").value.trim()
-  });
+  $("salvaZap").disabled = true;
 
-  $("zmsg").className = "msg " + (error ? "bad" : "ok");
-  $("zmsg").textContent = error
-    ? "Não foi possível salvar."
-    : "WhatsApp salvo!";
+  try {
+    const { error } = await db.from("configuracoes").upsert({
+      id: 1,
+      whatsapp: $("zap").value.trim()
+    });
+
+    $("zmsg").className = "msg " + (error ? "bad" : "ok");
+    $("zmsg").textContent = error
+      ? "Não foi possível salvar o WhatsApp."
+      : "WhatsApp salvo!";
+  } catch (erro) {
+    $("zmsg").className = "msg bad";
+    $("zmsg").textContent = "Erro de conexão ao salvar.";
+  } finally {
+    $("salvaZap").disabled = false;
+  }
 };
 
 async function listar() {
-  const { data, error } = await db
-    .from("agendamentos")
-    .select("*")
-    .eq("data", $("dia").value)
-    .order("hora");
+  $("lista").textContent = "Carregando agendamentos...";
+  const dataSelecionada = $("dia").value;
 
-  if (error) {
-    $("lista").textContent =
-      "Erro ao carregar a agenda. Verifique o acesso ao banco.";
-    return;
+  try {
+    const { data, error } = await db
+      .from("agendamentos")
+      .select("*")
+      .eq("data", dataSelecionada)
+      .order("hora");
+
+    if (error) {
+      $("lista").textContent =
+        "Erro ao carregar a agenda. Verifique o acesso ao banco.";
+      return;
+    }
+
+    const agendamentos = data || [];
+    const ativos = agendamentos.filter(
+      a => a.status !== "cancelado"
+    );
+
+    $("total").textContent =
+      `${ativos.length} cliente(s) · ` +
+      brl(ativos.reduce((s, a) => s + Number(a.preco || 0), 0)) +
+      " previstos";
+
+    $("lista").innerHTML = agendamentos.length
+      ? agendamentos.map(a => `
+        <div class="row ${esc(a.status)}">
+          <div>
+            <b>${esc(String(a.hora || "").slice(0, 5))}</b>
+            ${esc(a.nome)}
+            <small>
+              ${esc(a.servico)} · ${brl(Number(a.preco || 0))} ·
+              <a style="color:inherit"
+                 href="https://wa.me/55${String(a.telefone || "").replace(/\D/g, "")}">
+                ${esc(a.telefone)}
+              </a>
+            </small>
+          </div>
+          <div>
+            ${a.status === "agendado"
+              ? `<button class="sm"
+                   onclick="mudar('${esc(a.id)}','concluido')">Concluir</button>
+                 <button class="sm"
+                   onclick="mudar('${esc(a.id)}','cancelado')">Cancelar</button>`
+              : esc(a.status)}
+          </div>
+        </div>
+      `).join("")
+      : "<p>Nenhum agendamento neste dia.</p>";
+  } catch (erro) {
+    $("lista").textContent = "Erro de conexão ao carregar a agenda.";
   }
-
-  const ativos = data.filter(a => a.status !== "cancelado");
-
-  $("total").textContent =
-    `${ativos.length} cliente(s) · ` +
-    brl(ativos.reduce((s, a) => s + Number(a.preco), 0)) +
-    " previstos";
-
-  $("lista").innerHTML = data.length
-    ? data.map(a => `
-      <div class="row ${a.status}">
-        <div>
-          <b>${a.hora.slice(0, 5)}</b> ${esc(a.nome)}
-          <small>
-            ${esc(a.servico)} · ${brl(Number(a.preco))} ·
-            <a style="color:inherit"
-               href="https://wa.me/55${a.telefone.replace(/\D/g, "")}">
-               ${esc(a.telefone)}
-            </a>
-          </small>
-        </div>
-        <div>
-          ${a.status === "agendado"
-            ? `<button class="sm"
-                 onclick="mudar('${a.id}','concluido')">Concluir</button>
-               <button class="sm"
-                 onclick="mudar('${a.id}','cancelado')">Cancelar</button>`
-            : esc(a.status)}
-        </div>
-      </div>
-    `).join("")
-    : "<p>Nenhum agendamento neste dia.</p>";
 }
 
-const esc = s => String(s).replace(/[&<>"']/g, c => ({
-  "&": "&amp;",
-  "<": "&lt;",
-  ">": "&gt;",
-  '"': "&quot;",
-  "'": "&#39;"
-}[c]));
-
 async function mudar(id, status) {
+  if (!["concluido", "cancelado"].includes(status)) return;
+
   const { error } = await db
     .from("agendamentos")
     .update({ status })
