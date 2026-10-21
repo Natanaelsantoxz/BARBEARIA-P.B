@@ -66,3 +66,56 @@ drop policy if exists "profissional altera" on configuracoes;
 create policy "profissional altera" on configuracoes for all to authenticated
   using ((auth.jwt() ->> 'email') = 'barbeariapb11@gmail.com')
   with check ((auth.jwt() ->> 'email') = 'barbeariapb11@gmail.com');
+
+
+-- ===== PARTE 2: serviços, horários, bloqueios =====
+-- Rode no Supabase: SQL Editor > New query > cole TUDO > Run
+-- Pode rodar mais de uma vez sem dar erro.
+
+alter table configuracoes add column if not exists passo int not null default 30;
+
+create table if not exists servicos (
+  id uuid primary key default gen_random_uuid(),
+  nome text not null,
+  preco numeric(8,2) not null,
+  dur int not null,
+  ativo boolean not null default true,
+  ordem int not null default 0
+);
+create table if not exists horarios_semana (
+  dia int primary key check (dia between 0 and 6),
+  aberto boolean not null default true,
+  abre time not null default '09:00',
+  fecha time not null default '19:00'
+);
+create table if not exists bloqueios (
+  id uuid primary key default gen_random_uuid(),
+  data date not null,
+  inicio time,
+  fim time,
+  motivo text not null default ''
+);
+
+alter table servicos enable row level security;
+alter table horarios_semana enable row level security;
+alter table bloqueios enable row level security;
+
+do $$
+declare t text;
+begin
+  foreach t in array array['servicos','horarios_semana','bloqueios'] loop
+    execute format('drop policy if exists "todos leem" on %I', t);
+    execute format('create policy "todos leem" on %I for select to anon, authenticated using (true)', t);
+    execute format('drop policy if exists "profissional altera" on %I', t);
+    execute format($p$create policy "profissional altera" on %I for all to authenticated
+      using ((auth.jwt() ->> 'email') = 'barbeariapb11@gmail.com')
+      with check ((auth.jwt() ->> 'email') = 'barbeariapb11@gmail.com')$p$, t);
+  end loop;
+end $$;
+
+insert into horarios_semana (dia, aberto) values (0,false),(1,true),(2,true),(3,true),(4,true),(5,true),(6,true)
+  on conflict (dia) do nothing;
+
+insert into servicos (nome, preco, dur, ordem)
+select * from (values ('Corte',35,30,1),('Barba',25,30,2),('Sobrancelha',10,15,3),('Pigmentação',30,30,4)) v(nome,preco,dur,ordem)
+where not exists (select 1 from servicos);
