@@ -4,8 +4,8 @@
 // (Supabase > Project Settings > API)
 // ============================================================
 
-const SUPABASE_URL = "COLE_AQUI_A_PROJECT_URL";        // <<< PREENCHER (ex: https://abcdxyz.supabase.co)
-const SUPABASE_ANON_KEY = "COLE_AQUI_A_ANON_PUBLIC_KEY"; // <<< PREENCHER (a chave "anon public", NUNCA a "service_role")
+const SUPABASE_URL = "https://jbggyfpycaenejoqynbl.supabase.co";
+const SUPABASE_ANON_KEY = "sb_publishable_DcCUFjlBJupksriPNzkSyw_AoM6nDyf";
 
 // Conexão com o banco (usada por index.html, admin.html e reset-password.html)
 const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
