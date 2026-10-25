@@ -111,10 +111,18 @@ function render(){
   if(!w.aberto||bloq.some(x=>x.inicio==null)){$("slots").innerHTML="";$("info").textContent="Fechado neste dia. Escolha outra data.";return upd();}
   const bl=bloq.map(x=>[toMin(x.inicio),toMin(x.fim)]);
   const agora=new Date(),ehHoje=$("dia").value===hoje,nowM=agora.getHours()*60+agora.getMinutes();
+  const fim=toMin(w.fecha);
+  // intervalos livres entre agendamentos e bloqueios
+  const busy=[...ocupados,...bl].sort((a,b)=>a[0]-b[0]);
+  const livres=[];let cur=toMin(w.abre);
+  for(const [a,b] of busy){if(a>cur)livres.push([cur,a]);cur=Math.max(cur,b);}
+  if(cur<fim)livres.push([cur,fim]);
+  // horários começam no início de cada intervalo livre (= fim do corte anterior)
   let h="";
-  for(let m=toMin(w.abre);m+svc.dur<=toMin(w.fecha);m+=passo){
-    const off=(ehHoje&&m<=nowM)||ocupados.some(([a,b])=>m<b&&a<m+svc.dur)||bl.some(([a,b])=>m<b&&a<m+svc.dur);
-    h+=`<button class="slot" aria-pressed="${hora===toHM(m)}" data-h="${toHM(m)}" ${off?"disabled":""}>${toHM(m)}</button>`;}
+  for(const [gs,ge] of livres)
+    for(let m=gs;m+svc.dur<=ge;m+=passo){
+      if(ehHoje&&m<=nowM)continue;
+      h+=`<button class="slot" aria-pressed="${hora===toHM(m)}" data-h="${toHM(m)}">${toHM(m)}</button>`;}
   $("slots").innerHTML=h;
   if(!h)$("info").textContent="Sem horários para este serviço neste dia.";
   upd();}
