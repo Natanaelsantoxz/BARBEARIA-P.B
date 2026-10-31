@@ -18,7 +18,7 @@ select:focus-visible{outline:2px solid #cfcfd4;outline-offset:2px}
 .modo-plano #secsvc,.modo-plano #telbox{display:none!important}
 .modo-plano:not(.tem-saldo) #secprof,.modo-plano:not(.tem-saldo) #secdia,.modo-plano:not(.tem-saldo) #secdados{display:none!important}
 
-:root{--laranja:#f47b20;--laranja2:#ff8a2e}
+:root{--laranja:#be7f22;--laranja2:#d49a35;--ouro-claro:#dac09a}
 .logo{display:block;width:100%;max-width:420px;height:auto;margin:0 auto;border-radius:14px}
 .svc[aria-pressed="true"],.slot[aria-pressed="true"]{background:var(--laranja)!important;border-color:var(--laranja)!important;color:#111!important}
 .svc[aria-pressed="true"] *,.slot[aria-pressed="true"] *{color:#111!important}
@@ -32,13 +32,17 @@ footer a{color:var(--laranja)}
 input:focus-visible,select:focus-visible,button:focus-visible{outline:2px solid var(--laranja)!important;outline-offset:2px}
 select:focus{border-color:var(--laranja)}
 details summary{color:var(--laranja)}
+.svc b{color:var(--laranja)}
+.svc:focus-visible,.slot:focus-visible{outline:2px solid var(--laranja)}
+input:focus,select:focus{border-color:var(--laranja)!important}
+footer{color:var(--ouro-claro)}
 </style>
 </head><body class="modo-normal">
 <main>
-<img class="logo" src="logo.jpeg" alt="Barbearia P.B">
+<img class="logo" src="logo.jpg" alt="Barbearia P.B">
 <div id="tabs" style="display:grid;grid-template-columns:1fr 1fr;gap:.6rem;margin:1rem 0">
 <button class="svc" data-modo="normal" aria-pressed="true"><span class="n">Agendar horário</span></button>
-<button class="svc" data-modo="plano" aria-pressed="false"><span class="n">Tenho plano</span></button></div>
+<button class="svc" data-modo="plano" aria-pressed="false"><span class="n">Planos</span></button></div>
 <section id="secbuy"><details><summary style="cursor:pointer;font-weight:600">Quer um plano? Pague uma vez e agende vários dias</summary>
 <div id="planos" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:.7rem;margin-top:.8rem">Carregando...</div>
 <div id="pcompra" hidden><label for="pnome">Nome</label><input id="pnome" autocomplete="name">
@@ -59,7 +63,7 @@ details summary{color:var(--laranja)}
 <div id="resumo" class="resumo" hidden></div>
 <label for="nome">Nome</label><input id="nome" autocomplete="name">
 <div id="telbox"><label for="tel">WhatsApp</label><input id="tel" type="tel" autocomplete="tel" placeholder="(19) 90000-0000"></div>
-<div style="margin-top:1rem;padding:.8rem 1rem;border:1px dashed #f47b20;border-radius:10px;color:#f2f2f2;font-size:.92rem;line-height:1.4">⏱ <b>Atenção:</b> a tolerância de atraso é de <b>5 minutos</b>. Após esse tempo, o horário poderá ser cancelado.</div>
+<div style="margin-top:1rem;padding:.8rem 1rem;border:1px dashed var(--laranja);border-radius:10px;color:#f2f2f2;font-size:.92rem;line-height:1.4">⏱ <b>Atenção:</b> a tolerância de atraso é de <b>5 minutos</b>. Após esse tempo, o horário poderá ser cancelado.</div>
 <button class="main" id="ok" disabled>Confirmar e enviar no WhatsApp</button><div id="msg" class="msg" role="status"></div></section>
 <footer>Qualidade e Tradição · <a href="admin.html">Área do profissional</a></footer>
 </main>
