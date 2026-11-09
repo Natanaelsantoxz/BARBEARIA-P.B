@@ -16,6 +16,40 @@ select{width:100%;padding:.7rem;background:#000;color:var(--text);border:1px sol
 .fr{display:flex;gap:.5rem;flex-wrap:wrap;align-items:center;padding:.6rem 0;border-bottom:1px dashed var(--line)}
 .fr input:not([type=checkbox]){flex:1;min-width:90px}
 .fr label{margin:0;display:flex;gap:.3rem;align-items:center}
+
+:root{--laranja:#be7f22;--laranja2:#d49a35}
+.chips{display:flex;gap:.4rem;flex-wrap:wrap;margin:.7rem 0 .2rem}
+.chip{display:inline-flex;gap:.35rem;align-items:center;padding:.3rem .65rem;border:1px solid var(--line);border-radius:999px;font-size:.82rem;color:#d8d8dc;background:#0c0c0d}
+.chip b{color:#fff}
+.chip i{width:8px;height:8px;border-radius:50%;display:inline-block}
+.ag{display:flex;gap:.8rem;align-items:center;justify-content:space-between;flex-wrap:wrap;padding:.85rem .9rem;margin:.6rem 0;border:1px solid var(--line);border-left:4px solid var(--st,#888);border-radius:12px;background:#0c0c0d}
+.ag-hora{font-size:1.25rem;font-weight:700;min-width:3.6rem;color:#fff}
+.ag-info{flex:1;min-width:180px}
+.ag-nome{font-weight:600;font-size:1rem}
+.ag-det{display:block;margin-top:.15rem;font-size:.85rem;color:#a9a9b0;line-height:1.4}
+.ag-det a{color:var(--laranja2);text-decoration:none}
+.ag-badge{display:inline-block;margin-left:.4rem;padding:.12rem .5rem;border-radius:999px;font-size:.7rem;font-weight:700;letter-spacing:.02em;color:#111;background:var(--st,#888);vertical-align:middle}
+.ag-acoes{display:flex;gap:.4rem;flex-wrap:wrap}
+.ag-acoes button{padding:.55rem .9rem;border-radius:10px;font:inherit;font-weight:600;font-size:.88rem;cursor:pointer;border:1px solid transparent}
+.ag-acoes button:active{transform:scale(.97)}
+.b-ok{background:#2f9e6d;color:#fff}
+.b-ok:hover{background:#38b07b}
+.b-fim{background:var(--laranja);color:#111}
+.b-fim:hover{background:var(--laranja2)}
+.b-no{background:transparent;color:#ff8d86;border-color:#6b2b27!important}
+.b-no:hover{background:rgba(217,83,79,.12)}
+.ag.fechado{opacity:.72}
+@media(max-width:520px){.ag-acoes{width:100%}.ag-acoes button{flex:1}}
+
+/* Estrelinha animada da logo */
+.logo-wrap{position:relative;display:block;width:100%;max-width:420px;margin:0 auto;--star-x:50%;--star-y:20%;--star-size:13%}
+.logo-wrap .logo{margin:0;max-width:100%}
+.logo-star{position:absolute;left:var(--star-x);top:var(--star-y);width:var(--star-size);aspect-ratio:1;transform:translate(-50%,-50%);pointer-events:none;mix-blend-mode:screen}
+.logo-star svg{width:100%;height:100%;overflow:visible;filter:drop-shadow(0 0 6px #ffd98a) drop-shadow(0 0 14px rgba(212,154,53,.8));animation:starTwinkle 2.8s ease-in-out infinite}
+.logo-star::before{content:"";position:absolute;inset:-60%;border-radius:50%;background:radial-gradient(circle,rgba(255,217,138,.55) 0%,rgba(255,217,138,0) 65%);animation:starGlow 2.8s ease-in-out infinite}
+@keyframes starTwinkle{0%,100%{transform:scale(.25) rotate(0);opacity:0}45%,55%{transform:scale(1) rotate(45deg);opacity:1}}
+@keyframes starGlow{0%,100%{opacity:0;transform:scale(.6)}50%{opacity:1;transform:scale(1.1)}}
+@media (prefers-reduced-motion:reduce){.logo-star svg,.logo-star::before{animation:none;opacity:.7}}
 </style>
 <link rel="manifest" href="manifest-admin.json">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
@@ -28,7 +62,7 @@ select{width:100%;padding:.7rem;background:#000;color:var(--text);border:1px sol
 <body>
 
 <main>
-<img class="logo" src="logo.jpeg" alt="Barbearia P.B">
+<div class="logo-wrap"><img class="logo" src="logo.jpeg" alt="Barbearia P.B"><span class="logo-star" aria-hidden="true"><svg viewBox="0 0 100 100"><path d="M50 0C53 35 65 47 100 50C65 53 53 65 50 100C47 65 35 53 0 50C35 47 47 35 50 0Z" fill="#fff4d6"/></svg></span></div>
 
 <section id="login">
   <h2>Área do profissional</h2>
@@ -188,25 +222,68 @@ async function listar() {
     if ($("fp").value) q = q.eq("profissional_id", $("fp").value);
     const { data, error } = await q.order("hora");
     if (error) { $("lista").textContent = "Erro ao carregar a agenda: " + error.message; return; }
-    const ag = data || [], ativos = ag.filter(a => a.status !== "cancelado");
+    const ag = data || []; AG = ag;
+    const ativos = ag.filter(a => a.status !== "cancelado");
     const fat = ativos.reduce((s, a) => s + Number(a.preco || 0), 0);
-    $("total").textContent = `${ativos.length} cliente(s) · ${brl(fat)} previstos`;
-    $("lista").innerHTML = ag.length ? ag.map(a => `
-      <div class="row ${esc(a.status)}">
-        <div><b>${esc(String(a.hora || "").slice(0,5))}</b> ${esc(a.nome)}
-          <small>${esc(a.servico)} · ${PROFS.length > 1 && a.profissional_id ? esc(nomeProf(a.profissional_id)) + " · " : ""} ${brl(Number(a.preco || 0))} ·
-          <a style="color:inherit" href="https://wa.me/55${String(a.telefone || "").replace(/\D/g,"")}" target="_blank" rel="noopener noreferrer">${esc(a.telefone)}</a></small></div>
-        <div>${a.status === "agendado"
-          ? `<button class="sm" onclick="mudar('${esc(a.id)}','concluido')">Concluir</button> <button class="sm" onclick="mudar('${esc(a.id)}','cancelado')">Cancelar</button>`
-          : esc(a.status)}</div>
-      </div>`).join("") : "<p>Nenhum agendamento neste dia.</p>";
+    const cont = s => ag.filter(a => a.status === s).length;
+    $("total").innerHTML = `<div class="chips">
+      <span class="chip"><i style="background:${ST.agendado.c}"></i><b>${cont("agendado")}</b> pendente(s)</span>
+      <span class="chip"><i style="background:${ST.confirmado.c}"></i><b>${cont("confirmado")}</b> confirmado(s)</span>
+      <span class="chip"><i style="background:${ST.concluido.c}"></i><b>${cont("concluido")}</b> concluído(s)</span>
+      <span class="chip">Previsto: <b>${esc(brl(fat))}</b></span></div>`;
+    $("lista").innerHTML = ag.length ? ag.map(a => {
+      const st = ST[a.status] || { t: a.status, c: "#888" };
+      const tel = String(a.telefone || "").replace(/\D/g, "");
+      const prof = PROFS.length > 1 && a.profissional_id ? esc(nomeProf(a.profissional_id)) + " · " : "";
+      const id = esc(a.id);
+      let acoes = "";
+      if (a.status === "agendado") acoes = `<button class="b-ok" data-ac="confirmar" data-id="${id}">Confirmar</button><button class="b-no" data-ac="recusar" data-id="${id}">Recusar</button>`;
+      else if (a.status === "confirmado") acoes = `<button class="b-fim" data-ac="concluir" data-id="${id}">Concluir</button><button class="b-no" data-ac="cancelar" data-id="${id}">Cancelar</button>`;
+      return `<div class="ag ${a.status === "concluido" || a.status === "cancelado" ? "fechado" : ""}" style="--st:${st.c}">
+        <div class="ag-hora">${esc(String(a.hora || "").slice(0,5))}</div>
+        <div class="ag-info"><div class="ag-nome">${esc(a.nome)}<span class="ag-badge">${esc(st.t)}</span></div>
+          <span class="ag-det">${esc(a.servico)} · ${prof}${esc(brl(Number(a.preco || 0)))}</span>
+          <span class="ag-det"><a href="https://wa.me/55${tel}" target="_blank" rel="noopener noreferrer">${esc(a.telefone)}</a></span></div>
+        ${acoes ? `<div class="ag-acoes">${acoes}</div>` : ""}
+      </div>`;
+    }).join("") : "<p>Nenhum agendamento neste dia.</p>";
   } catch (e) { $("lista").textContent = "Erro de conexão: " + msgErr(e); }
 }
+var AG = [];
+const ST = {
+  agendado:  { t: "Pendente",   c: "#d49a35" },
+  confirmado:{ t: "Confirmado", c: "#3fb27f" },
+  concluido: { t: "Concluído",  c: "#7d8cff" },
+  cancelado: { t: "Recusado",   c: "#d9534f" }
+};
 async function mudar(id, status) {
   const { error } = await db.from("agendamentos").update({ status }).eq("id", id);
-  if (error) { alert("Não foi possível atualizar: " + error.message); return; }
-  listar();
+  if (error) {
+    alert("Não foi possível atualizar: " + error.message + (status === "confirmado" ? "\n\nSe a mensagem fala em 'check constraint', rode o SQL que libera o status \"confirmado\" no Supabase." : ""));
+    return false;
+  }
+  listar(); return true;
 }
+$("lista").onclick = async e => {
+  const b = e.target.closest("[data-ac]"); if (!b) return;
+  const id = b.dataset.id, ac = b.dataset.ac, a = AG.find(x => String(x.id) === String(id));
+  if (!a) return;
+  if (ac === "confirmar") {
+    // abre o WhatsApp primeiro (o navegador só permite no clique direto)
+    const tel = String(a.telefone || "").replace(/\D/g, "");
+    const p = a.profissional_id ? nomeProf(a.profissional_id) : "";
+    const texto = `Olá, ${a.nome}! ✅ Seu agendamento na *Barbearia P.B* está *confirmado*.\n\n*Serviço:* ${a.servico}${p && PROFS.length > 1 ? "\n*Profissional:* " + p : ""}\n*Data:* ${brData(a.data)}\n*Horário:* ${String(a.hora || "").slice(0,5)}\n\n_Lembrete: tolerância de 5 minutos de atraso._ Te esperamos!`;
+    if (tel) window.open("https://wa.me/" + (tel.length <= 11 ? "55" : "") + tel + "?text=" + encodeURIComponent(texto), "_blank", "noopener");
+    else alert("Este cliente não tem WhatsApp cadastrado.");
+    await mudar(id, "confirmado");
+  } else if (ac === "recusar") {
+    if (confirm("Recusar o pedido de " + a.nome + "? O horário volta a ficar livre.")) mudar(id, "cancelado");
+  } else if (ac === "cancelar") {
+    if (confirm("Cancelar o agendamento de " + a.nome + "? O horário volta a ficar livre.")) mudar(id, "cancelado");
+  } else if (ac === "concluir") {
+    mudar(id, "concluido");
+  }
+};
 
 /* ---------- Serviços ---------- */
 async function carregaSvc() {

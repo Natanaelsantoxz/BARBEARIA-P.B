@@ -36,10 +36,20 @@ details summary{color:var(--laranja)}
 .svc:focus-visible,.slot:focus-visible{outline:2px solid var(--laranja)}
 input:focus,select:focus{border-color:var(--laranja)!important}
 footer{color:var(--ouro-claro)}
+
+/* Estrelinha animada da logo */
+.logo-wrap{position:relative;display:block;width:100%;max-width:420px;margin:0 auto;--star-x:50%;--star-y:20%;--star-size:13%}
+.logo-wrap .logo{margin:0;max-width:100%}
+.logo-star{position:absolute;left:var(--star-x);top:var(--star-y);width:var(--star-size);aspect-ratio:1;transform:translate(-50%,-50%);pointer-events:none;mix-blend-mode:screen}
+.logo-star svg{width:100%;height:100%;overflow:visible;filter:drop-shadow(0 0 6px #ffd98a) drop-shadow(0 0 14px rgba(212,154,53,.8));animation:starTwinkle 2.8s ease-in-out infinite}
+.logo-star::before{content:"";position:absolute;inset:-60%;border-radius:50%;background:radial-gradient(circle,rgba(255,217,138,.55) 0%,rgba(255,217,138,0) 65%);animation:starGlow 2.8s ease-in-out infinite}
+@keyframes starTwinkle{0%,100%{transform:scale(.25) rotate(0);opacity:0}45%,55%{transform:scale(1) rotate(45deg);opacity:1}}
+@keyframes starGlow{0%,100%{opacity:0;transform:scale(.6)}50%{opacity:1;transform:scale(1.1)}}
+@media (prefers-reduced-motion:reduce){.logo-star svg,.logo-star::before{animation:none;opacity:.7}}
 </style>
 </head><body class="modo-normal">
 <main>
-<img class="logo" src="logo.jpg" alt="Barbearia P.B">
+<div class="logo-wrap"><img class="logo" src="logo.jpg" alt="Barbearia P.B"><span class="logo-star" aria-hidden="true"><svg viewBox="0 0 100 100"><path d="M50 0C53 35 65 47 100 50C65 53 53 65 50 100C47 65 35 53 0 50C35 47 47 35 50 0Z" fill="#fff4d6"/></svg></span></div>
 <div id="tabs" style="display:grid;grid-template-columns:1fr 1fr;gap:.6rem;margin:1rem 0">
 <button class="svc" data-modo="normal" aria-pressed="true"><span class="n">Agendar horário</span></button>
 <button class="svc" data-modo="plano" aria-pressed="false"><span class="n">Planos</span></button></div>
