@@ -262,6 +262,11 @@ async function carregaPend() {
     $("pend").innerHTML = AGP.length
       ? `<h3 style="margin:.9rem 0 .2rem;color:var(--laranja2)">🔔 Pedidos aguardando sua resposta (${AGP.length})</h3>` + AGP.map(x => cardAg(x, true)).join("") + `<hr style="border:0;border-top:1px solid var(--line);margin:1rem 0">`
       : "";
+    if (!AGP.length) {
+      const [{ data: ss }, c] = await Promise.all([db.auth.getSession(), db.from("agendamentos").select("id", { count: "exact", head: true })]);
+      const em = ss && ss.session && ss.session.user ? ss.session.user.email : "?";
+      $("pend").innerHTML = `<p class="msg" style="font-size:.8rem;opacity:.75">Nenhum pedido pendente. Conectado como ${esc(em)} · o painel enxerga ${c.error ? "erro: " + esc(c.error.message) : esc(c.count)} agendamento(s) no total.</p>`;
+    }
   } catch (e) { $("pend").innerHTML = ""; }
 }
 setInterval(() => { if (!$("painel").hidden) carregaPend(); }, 30000);
@@ -272,34 +277,52 @@ const ST = {
   concluido: { t: "Concluído",  c: "#7d8cff" },
   cancelado: { t: "Recusado",   c: "#d9534f" }
 };
+function toast(msg, ok) {
+  let t = $("toast");
+  if (!t) { t = document.createElement("div"); t.id = "toast"; t.setAttribute("role", "status");
+    t.style.cssText = "position:fixed;left:50%;bottom:20px;transform:translateX(-50%);max-width:92vw;padding:.7rem 1rem;border-radius:12px;font-size:.9rem;z-index:99;box-shadow:0 6px 24px rgba(0,0,0,.5)";
+    document.body.appendChild(t); }
+  t.style.background = ok ? "#1f6f4d" : "#8a2b27"; t.style.color = "#fff"; t.textContent = msg; t.hidden = false;
+  clearTimeout(t._t); t._t = setTimeout(() => { t.hidden = true; }, ok ? 3000 : 9000);
+}
 async function mudar(id, status) {
-  const { error } = await db.from("agendamentos").update({ status }).eq("id", id);
+  const { data, error } = await db.from("agendamentos").update({ status }).eq("id", id).select();
   if (error) {
-    alert("Não foi possível atualizar: " + error.message + (status === "confirmado" ? "\n\nSe a mensagem fala em 'check constraint', rode o SQL que libera o status \"confirmado\" no Supabase." : ""));
+    toast("Não foi possível atualizar: " + error.message + (status === "confirmado" ? " (falta liberar o status \"confirmado\" no Supabase)" : ""), false);
     return false;
   }
+  if (!data || !data.length) { toast("O banco não deixou alterar este pedido (permissão). Me avise para eu te passar o ajuste.", false); return false; }
+  toast(status === "confirmado" ? "Pedido confirmado!" : status === "concluido" ? "Serviço concluído!" : "Pedido recusado.", true);
   listar(); return true;
 }
-$("lista").onclick = async e => {
+async function acaoAg(e) {
   const b = e.target.closest("[data-ac]"); if (!b) return;
   const id = b.dataset.id, ac = b.dataset.ac, a = AG.concat(AGP).find(x => String(x.id) === String(id));
   if (!a) return;
+  if (ac === "recusar" || ac === "cancelar") {
+    if (b.dataset.armed !== "1") {
+      b.dataset.armed = "1"; const t0 = b.textContent; b.textContent = "Toque para confirmar";
+      setTimeout(() => { b.dataset.armed = ""; b.textContent = t0; }, 4000); return;
+    }
+    // abre o WhatsApp avisando o cliente (precisa ser no clique direto)
+    const tel = String(a.telefone || "").replace(/\D/g, "");
+    const texto = `Olá, ${a.nome}! Infelizmente não conseguimos fazer esse agendamento (${a.servico}, ${brData(a.data)} às ${String(a.hora || "").slice(0,5)}).\n\nMarque outra data ou outro horário pelo nosso site. Obrigado pela compreensão! 🙏\n\n_Barbearia P.B_`;
+    if (tel) window.open("https://wa.me/" + (tel.length <= 11 ? "55" : "") + tel + "?text=" + encodeURIComponent(texto), "_blank", "noopener");
+    else toast("Este cliente não tem WhatsApp cadastrado. O pedido foi recusado, mas avise-o por outro meio.", false);
+    b.disabled = true; mudar(id, "cancelado"); return;
+  }
   if (ac === "confirmar") {
     // abre o WhatsApp primeiro (o navegador só permite no clique direto)
     const tel = String(a.telefone || "").replace(/\D/g, "");
     const p = a.profissional_id ? nomeProf(a.profissional_id) : "";
     const texto = `Olá, ${a.nome}! ✅ Seu agendamento na *Barbearia P.B* está *confirmado*.\n\n*Serviço:* ${a.servico}${p && PROFS.length > 1 ? "\n*Profissional:* " + p : ""}\n*Data:* ${brData(a.data)}\n*Horário:* ${String(a.hora || "").slice(0,5)}\n\n_Lembrete: tolerância de 5 minutos de atraso._ Te esperamos!`;
     if (tel) window.open("https://wa.me/" + (tel.length <= 11 ? "55" : "") + tel + "?text=" + encodeURIComponent(texto), "_blank", "noopener");
-    else alert("Este cliente não tem WhatsApp cadastrado.");
-    await mudar(id, "confirmado");
-  } else if (ac === "recusar") {
-    if (confirm("Recusar o pedido de " + a.nome + "? O horário volta a ficar livre.")) mudar(id, "cancelado");
-  } else if (ac === "cancelar") {
-    if (confirm("Cancelar o agendamento de " + a.nome + "? O horário volta a ficar livre.")) mudar(id, "cancelado");
-  } else if (ac === "concluir") {
-    mudar(id, "concluido");
-  }
-};
+    else toast("Este cliente não tem WhatsApp cadastrado.", false);
+    b.disabled = true; await mudar(id, "confirmado");
+  } else if (ac === "concluir") { b.disabled = true; mudar(id, "concluido"); }
+}
+$("lista").onclick = acaoAg;
+$("pend").onclick = acaoAg;
 
 /* ---------- Serviços ---------- */
 async function carregaSvc() {
