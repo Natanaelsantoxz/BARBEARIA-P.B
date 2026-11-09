@@ -264,11 +264,6 @@ async function carregaPend() {
     $("pend").innerHTML = AGP.length
       ? `<h3 style="margin:.9rem 0 .2rem;color:var(--laranja2)">🔔 Pedidos aguardando sua resposta (${AGP.length})</h3>` + AGP.map(x => cardAg(x, true)).join("") + `<hr style="border:0;border-top:1px solid var(--line);margin:1rem 0">`
       : "";
-    if (!AGP.length) {
-      const [{ data: ss }, c] = await Promise.all([db.auth.getSession(), db.from("agendamentos").select("id", { count: "exact", head: true })]);
-      const em = ss && ss.session && ss.session.user ? ss.session.user.email : "?";
-      $("pend").innerHTML = `<p class="msg" style="font-size:.8rem;opacity:.75">Nenhum pedido pendente. Conectado como ${esc(em)} · o painel enxerga ${c.error ? "erro: " + esc(c.error.message) : esc(c.count)} agendamento(s) no total.</p>`;
-    }
   } catch (e) { $("pend").innerHTML = ""; }
 }
 setInterval(() => { if (!$("painel").hidden) carregaPend(); }, 30000);
