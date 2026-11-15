@@ -1,0 +1,974 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Barbearia P.B — Área do profissional</title>
+<link rel="stylesheet" href="style.css">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+<style>
+[hidden]{display:none!important}
+input[type=checkbox]{width:auto}
+select{width:100%;padding:.7rem;background:#000;color:var(--text);border:1px solid var(--line);border-radius:10px;font:inherit}
+.fr select{flex:1;min-width:90px;width:auto}
+.tabs{display:flex;gap:.4rem;flex-wrap:wrap;margin:.8rem 0}
+.tabs .sm[aria-pressed=true]{background:var(--silver);color:#000}
+.fr{display:flex;gap:.5rem;flex-wrap:wrap;align-items:center;padding:.6rem 0;border-bottom:1px dashed var(--line)}
+.fr input:not([type=checkbox]){flex:1;min-width:90px}
+.fr label{margin:0;display:flex;gap:.3rem;align-items:center}
+
+:root{--laranja:#be7f22;--laranja2:#d49a35}
+.chips{display:flex;gap:.4rem;flex-wrap:wrap;margin:.7rem 0 .2rem}
+.chip{display:inline-flex;gap:.35rem;align-items:center;padding:.3rem .65rem;border:1px solid var(--line);border-radius:999px;font-size:.82rem;color:#d8d8dc;background:#0c0c0d}
+.chip b{color:#fff}
+.chip i{width:8px;height:8px;border-radius:50%;display:inline-block}
+.ag{display:flex;gap:.8rem;align-items:center;justify-content:space-between;flex-wrap:wrap;padding:.85rem .9rem;margin:.6rem 0;border:1px solid var(--line);border-left:4px solid var(--st,#888);border-radius:12px;background:#0c0c0d}
+.ag-hora{font-size:1.25rem;font-weight:700;min-width:3.6rem;color:#fff}
+.ag-info{flex:1;min-width:180px}
+.ag-nome{font-weight:600;font-size:1rem}
+.ag-det{display:block;margin-top:.15rem;font-size:.85rem;color:#a9a9b0;line-height:1.4}
+.ag-det a{color:var(--laranja2);text-decoration:none}
+.ag-badge{display:inline-block;margin-left:.4rem;padding:.12rem .5rem;border-radius:999px;font-size:.7rem;font-weight:700;letter-spacing:.02em;color:#111;background:var(--st,#888);vertical-align:middle}
+.ag-acoes{display:flex;gap:.4rem;flex-wrap:wrap}
+.ag-acoes button{padding:.55rem .9rem;border-radius:10px;font:inherit;font-weight:600;font-size:.88rem;cursor:pointer;border:1px solid transparent}
+.ag-acoes button:active{transform:scale(.97)}
+.b-ok{background:#2f9e6d;color:#fff}
+.b-ok:hover{background:#38b07b}
+.b-fim{background:var(--laranja);color:#111}
+.b-fim:hover{background:var(--laranja2)}
+.b-no{background:transparent;color:#ff8d86;border-color:#6b2b27!important}
+.b-no:hover{background:rgba(217,83,79,.12)}
+.b-del{background:transparent;color:#c9c9cf;border-color:#3a3a3e!important}
+.b-del:hover{background:rgba(217,83,79,.14);color:#ff8d86;border-color:#6b2b27!important}
+.limpar{margin-top:.5rem}
+.ag.fechado{opacity:.72}
+@media(max-width:520px){.ag-acoes{width:100%}.ag-acoes button{flex:1}}
+
+/* Logo animada: só o desenho brilha (o fundo preto continua preto) */
+.logo-wrap{position:relative;display:block;width:100%;max-width:420px;margin:0 auto;border-radius:14px;overflow:hidden;isolation:isolate;animation:logoIn 1.1s cubic-bezier(.2,.8,.2,1) both,logoFloat 5s ease-in-out 1.1s infinite}
+.logo-wrap .logo{margin:0;max-width:100%;transform-origin:50% 50%;animation:logoBreath 5s ease-in-out 1.1s infinite,logoLit 3.4s ease-in-out 1.1s infinite}
+.logo-wrap::after{content:"";position:absolute;inset:0;pointer-events:none;border-radius:inherit;background:linear-gradient(110deg,transparent 38%,rgba(255,226,160,.5) 47%,rgba(255,255,255,.9) 50%,rgba(255,226,160,.5) 53%,transparent 62%);background-size:300% 100%;background-position:130% 0;mix-blend-mode:color-dodge;animation:logoShine 3.8s ease-in-out 1.4s infinite}
+.logo-sp{position:absolute;width:var(--s,14px);height:var(--s,14px);transform:translate(-50%,-50%) scale(0);pointer-events:none;background:#fff6dc;clip-path:polygon(50% 0,59% 41%,100% 50%,59% 59%,50% 100%,41% 59%,0 50%,41% 41%);filter:drop-shadow(0 0 3px #ffd98a);animation:logoSp 1.3s ease-in-out forwards}
+@keyframes logoIn{0%{opacity:0;transform:translateY(14px) scale(.9);filter:blur(8px)}100%{opacity:1;transform:none;filter:blur(0)}}
+@keyframes logoFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-4px)}}
+@keyframes logoBreath{0%,100%{transform:scale(1)}50%{transform:scale(1.025)}}
+@keyframes logoLit{0%,100%{filter:brightness(1) saturate(1)}50%{filter:brightness(1.32) saturate(1.2)}}
+@keyframes logoShine{0%{background-position:130% 0}55%,100%{background-position:-30% 0}}
+@keyframes logoSp{0%{transform:translate(-50%,-50%) scale(0) rotate(0);opacity:0}40%{transform:translate(-50%,-50%) scale(1) rotate(45deg);opacity:1}100%{transform:translate(-50%,-50%) scale(0) rotate(90deg);opacity:0}}
+@media (prefers-reduced-motion:reduce){.logo-wrap,.logo-wrap .logo,.logo-wrap::after{animation:none}}
+
+/* Resumo (gráficos) */
+.rcards{display:grid;grid-template-columns:repeat(3,1fr);gap:.5rem;margin:.9rem 0 .3rem}
+.rcard{display:block;width:100%;margin:0;text-align:left;font:inherit;color:inherit;cursor:pointer;padding:.8rem .7rem .75rem;border:1px solid var(--line,#2a2a2d);border-radius:14px;background:linear-gradient(180deg,#131315,#0b0b0c);transition:border-color .2s,background .2s}
+.rcard small{display:block;color:#9a9aa2;font-size:.78rem;margin-bottom:.4rem}
+.rcard b{display:block;font-size:1.15rem;font-weight:700;letter-spacing:-.01em;line-height:1.1;color:#fff}
+.rcard span{display:block;margin-top:.3rem;font-size:.78rem;color:#9a9aa2}
+.rcard.on{border-color:var(--laranja);background:linear-gradient(180deg,#201808,#0e0b05)}
+.rcard.on small{color:#e6c07a}
+.rcard.on b{color:var(--laranja2)}
+.rcard:focus-visible{outline:2px solid var(--laranja2);outline-offset:2px}
+.rdica{margin:.2rem 0 0;font-size:.78rem;color:#7d7d85}
+
+.rpanel{--c1:#e8b24f;--c2:#a86d14;margin:.9rem 0;padding:1rem .9rem .85rem;border:1px solid var(--line,#2a2a2d);border-radius:16px;background:#0c0c0d}
+.rpanel.prata{--c1:#ececf0;--c2:#80808a}
+.rhead{display:flex;justify-content:space-between;align-items:flex-start;gap:.8rem;margin-bottom:.8rem}
+.rhead h3{margin:0;font-size:1rem;font-weight:600}
+.rhead small{display:block;margin-top:.2rem;font-size:.78rem;color:#9a9aa2}
+.rtot{text-align:right}
+.rtot b{display:block;font-size:1.4rem;font-weight:700;letter-spacing:-.01em;line-height:1.1;color:#fff}
+
+.gread{min-height:1.3rem;margin-bottom:.3rem;font-size:.82rem;color:#7d7d85}
+.gread.on{color:#f0f0f3}
+.gc{display:grid;grid-template-columns:36px 1fr;grid-template-rows:170px auto;column-gap:8px;margin-top:18px}
+.gy{position:relative}
+.gy span{position:absolute;right:0;transform:translateY(50%);font-size:.66rem;line-height:1;color:#7d7d85;font-variant-numeric:tabular-nums}
+.gp{position:relative}
+.gl i{position:absolute;left:0;right:0;height:0;border-top:1px dashed #28282b}
+.gl i.base{border-top:1px solid #3a3a3e}
+.gb{position:absolute;inset:0;display:flex;align-items:flex-end;gap:var(--gap,4px)}
+.gcol{flex:1;min-width:0;height:100%;display:flex;align-items:flex-end;justify-content:center;cursor:pointer;-webkit-tap-highlight-color:transparent}
+.gbar{position:relative;width:100%;max-width:30px;border-radius:5px 5px 0 0;background:linear-gradient(180deg,var(--c1),var(--c2));opacity:.8;transition:opacity .15s,filter .15s}
+.gbar em{position:absolute;bottom:100%;left:50%;transform:translateX(-50%);margin-bottom:4px;font-style:normal;font-size:.64rem;font-weight:600;color:#e8e8ec;white-space:nowrap}
+.gcol:hover .gbar,.gcol.now .gbar,.gcol.sel .gbar{opacity:1}
+.gcol.now .gbar{box-shadow:0 0 16px -3px var(--c1)}
+.gcol.sel .gbar{filter:brightness(1.2);box-shadow:0 0 0 1px var(--c1)}
+.gcol.z .gbar{height:2px!important;opacity:1;border-radius:1px;background:#2c2c30;box-shadow:none}
+.gx{grid-column:2;display:flex;gap:var(--gap,4px);padding-top:7px}
+.gx span{flex:1;min-width:0;text-align:center;white-space:nowrap;font-size:.64rem;color:#7d7d85}
+.gx span.now{color:var(--laranja2);font-weight:700}
+.gvazio{margin:.7rem 0 0;font-size:.82rem;color:#7d7d85;text-align:center}
+@media(max-width:520px){.rcard b{font-size:1rem}.rtot b{font-size:1.2rem}}
+@media(prefers-reduced-motion:reduce){.gbar,.rcard{transition:none}}
+/* Dashboard financeiro */
+.rpanel.verm{--c1:#ff8a82;--c2:#8f2b27}
+.dtit{margin:.2rem 0 .4rem;font-size:1.25rem;letter-spacing:.01em;color:var(--laranja2);text-transform:uppercase}
+.dbar{display:flex;gap:.6rem;flex-wrap:wrap;align-items:center;justify-content:space-between;margin:.8rem 0 .4rem}
+.dtog{display:flex;gap:.4rem}.dtog .sm[aria-pressed=true]{background:var(--laranja);color:#111;border-color:var(--laranja)}
+.dnav{display:flex;gap:.5rem;align-items:center}.dnav b{min-width:9.5rem;text-align:center;font-size:.9rem;color:#f0f0f3}
+.dk{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:.5rem;margin:.6rem 0}
+.dkc{position:relative;padding:.8rem .8rem .75rem;border:1px solid var(--line,#2a2a2d);border-radius:14px;background:linear-gradient(180deg,#131315,#0b0b0c);overflow:hidden}
+.dkc small{display:block;color:#9a9aa2;font-size:.78rem;margin-bottom:.35rem}
+.dkc b{display:block;font-size:1.3rem;font-weight:700;line-height:1.1;color:#fff}
+.dkc span{display:block;margin-top:.25rem;font-size:.74rem;color:#7d7d85}
+.dkc svg{position:absolute;right:.7rem;top:.7rem;width:26px;height:26px}
+.dkc.rec{border-color:var(--laranja);background:linear-gradient(180deg,#201808,#0e0b05)}.dkc.rec b{color:var(--laranja2)}
+.dkc.dsp{border-color:#6b2b27;background:linear-gradient(180deg,#241010,#0e0707)}.dkc.dsp b{color:#ff8d86}
+.dkc.cut svg{color:var(--laranja2)}
+.dkc.neg b{color:#ff8d86}
+.dsub{display:block;font-size:.78rem;color:#7d7d85;margin-bottom:.4rem}
+.dgrid{display:grid;grid-template-columns:1fr;gap:.9rem}
+@media(min-width:760px){.dgrid.dois{grid-template-columns:1fr 1fr}}
+.dgrid .rpanel{margin:.4rem 0}
+.donut{display:flex;align-items:center;gap:1rem;justify-content:center;flex-wrap:wrap;padding:.3rem 0}
+.donut svg{width:150px;height:150px;transform:rotate(-90deg)}
+.donut text{transform:rotate(90deg);transform-origin:50% 50%}
+.lg{display:flex;flex-direction:column;gap:.4rem;font-size:.85rem;color:#d8d8dc}
+.lg i{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:.4rem}
+.rk{display:flex;flex-direction:column;gap:.55rem}
+.rk div.l{display:grid;grid-template-columns:minmax(70px,32%) 1fr auto;gap:.5rem;align-items:center;font-size:.8rem;color:#d8d8dc}
+.rk .t{height:10px;border-radius:5px;background:#1b1b1d;overflow:hidden}
+.rk .t u{display:block;height:100%;border-radius:5px;background:linear-gradient(90deg,var(--c2),var(--c1))}
+.rk .n{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.lrow{display:flex;gap:.6rem;align-items:center;padding:.55rem 0;border-bottom:1px dashed var(--line)}
+.lrow svg{width:22px;height:22px;flex:none}
+.lrow .li{flex:1;min-width:0}.lrow .li b{display:block;font-size:.92rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.lrow .li small{color:#8a8a92}.lrow .v{font-weight:700;white-space:nowrap}.lrow .v.d{color:#ff8d86}.lrow .v.c{color:var(--laranja2)}
+.lrow button{padding:.35rem .6rem}
+
+
+.feito{display:flex;align-items:center;justify-content:center;gap:.4rem;margin:1.4rem auto .4rem;font-size:.66rem;letter-spacing:.04em;color:#6f6f77;opacity:.75;text-decoration:none}
+.feito img{height:13px;width:auto;display:block}
+.feito:hover{opacity:1}
+</style>
+<link rel="manifest" href="manifest-admin.json">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="icon" type="image/png" href="icon-192.png">
+<meta name="theme-color" content="#000000">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
+</head>
+<body>
+
+<main>
+<div class="logo-wrap"><img class="logo" src="logo.jpeg" alt="Barbearia P.B"></div>
+
+<section id="login">
+  <h2>Área do profissional</h2>
+  <label for="pw">Senha do profissional</label>
+  <input id="pw" type="password" autocomplete="current-password" placeholder="Digite sua senha">
+  <button class="main" id="entrar" type="button">Entrar</button>
+  <div id="lmsg" class="msg bad" role="alert"></div>
+  <footer><a href="reset-password.html">Esqueci minha senha</a></footer>
+</section>
+
+<section id="painel" hidden>
+  <div class="row"><h2 style="margin:0">Painel</h2><button class="sm" id="sair" type="button">Sair</button></div>
+  <div class="tabs">
+    <button class="sm" data-tab="t1" aria-pressed="true">Agenda</button>
+    <button class="sm" data-tab="t8" aria-pressed="false">Resumo</button>
+    <button class="sm" data-tab="t2" aria-pressed="false">Serviços</button>
+    <button class="sm" data-tab="t3" aria-pressed="false">Horários</button>
+    <button class="sm" data-tab="t4" aria-pressed="false">Bloqueios</button>
+    <button class="sm" data-tab="t6" aria-pressed="false">Profissionais</button>
+    <button class="sm" data-tab="t7" aria-pressed="false">Planos</button>
+    <button class="sm" data-tab="t5" aria-pressed="false">WhatsApp</button>
+  </div>
+
+  <div id="t1" class="tab">
+    <div id="pend"></div>
+    <label for="dia">Dia</label><div class="fr" style="border:0;padding:0"><button class="sm" id="dprev" type="button">‹</button><select id="dia"></select><button class="sm" id="dnext" type="button">›</button><button class="sm" id="dhoje" type="button">Hoje</button></div>
+    <label for="fp">Profissional</label><select id="fp"><option value="">Todos</option></select>
+    <div id="total" class="msg"></div><div id="lista"></div>
+  </div>
+
+  <div id="t8" class="tab" hidden>
+    <h2 class="dtit">Dashboard financeiro</h2>
+    <label for="rp">Profissional</label><select id="rp"><option value="">Todos</option></select>
+    <div class="dbar">
+      <div class="dtog"><button class="sm" type="button" data-dp="mes" aria-pressed="true">Mês</button><button class="sm" type="button" data-dp="sem" aria-pressed="false">Semana</button></div>
+      <div class="dnav"><button class="sm" type="button" id="dprv2" aria-label="Anterior">‹</button><b id="dlab"></b><button class="sm" type="button" id="dnx2" aria-label="Próximo">›</button></div>
+    </div>
+    <div class="dk" id="dk"></div>
+    <div id="rgraf"></div>
+    <div id="rmsg" class="msg"></div>
+    <section class="rpanel" id="lsec">
+      <h3 style="margin:0 0 .2rem">Lançamentos manuais</h3>
+      <small class="dsub">Cortes que você fez fora da agenda e suas despesas. Ficam salvos na sua base.</small>
+      <div class="fr" style="border:0">
+        <select id="lt"><option value="corte">✂ Corte</option><option value="desp">Despesa</option></select>
+        <input id="ld" type="date">
+      </div>
+      <div class="fr" style="border:0;padding-top:0">
+        <input id="ln" placeholder="Serviço (ex.: Corte social)">
+        <input id="lv" type="number" step="0.01" min="0" placeholder="Valor R$" style="max-width:110px">
+        <input id="lq" type="number" min="1" step="1" value="1" placeholder="Qtd" style="max-width:70px" title="Quantidade de cortes">
+      </div>
+      <div class="fr" style="border:0;padding-top:0"><button class="main" id="lsave" type="button">Adicionar</button><button class="sm" id="lcancel" type="button" hidden>Cancelar edição</button></div>
+      <div id="lmsg" class="msg"></div>
+      <div id="llist"></div>
+    </section>
+    <p><small>Receitas e cortes contam os atendimentos marcados como <b>Concluído</b> na agenda, mais os lançamentos manuais.</small></p>
+  </div>
+
+  <div id="t2" class="tab" hidden>
+    <p>Nome · Preço (R$) · Minutos</p>
+    <div id="svl"></div>
+    <h3 style="margin-top:1rem">Novo serviço</h3>
+    <div class="fr">
+      <input id="sn" placeholder="Nome">
+      <input id="sp" type="number" step="0.01" placeholder="Preço" style="max-width:100px">
+      <input id="sd" type="number" placeholder="Minutos" style="max-width:100px">
+      <button class="sm" id="sadd" type="button">Adicionar</button>
+    </div>
+    <div id="smsg" class="msg"></div>
+  </div>
+
+  <div id="t3" class="tab" hidden>
+    <p>Marque os dias em que você abre e o horário de cada um.</p>
+    <div id="sem"></div>
+    <label for="passo">Intervalo entre horários (minutos)</label>
+    <input id="passo" type="number" min="5" step="5">
+    <button class="main" id="ssem" type="button">Salvar horários</button>
+    <div id="hmsg" class="msg"></div>
+  </div>
+
+  <div id="t4" class="tab" hidden>
+    <h3 style="margin:.4rem 0 .2rem">Fechar um mês inteiro</h3>
+    <p>Ninguém consegue agendar nos dias do mês fechado. Agendamentos que já existem não são cancelados.</p>
+    <label for="bmes">Mês</label><select id="bmes"></select>
+    <label for="bmm">Motivo (opcional)</label><input id="bmm" placeholder="Ex.: férias">
+    <button class="main" id="bmadd" type="button">Fechar mês</button>
+    <div id="bmmsg" class="msg"></div>
+    <hr style="border:0;border-top:1px solid var(--line);margin:1.2rem 0">
+    <h3 style="margin:0 0 .2rem">Bloquear dias ou horários</h3>
+    <p>Bloqueie um dia inteiro (folga, feriado) ou só um intervalo (almoço, compromisso).</p>
+    <label for="bd">Dia</label><select id="bd"></select>
+    <label style="display:flex;gap:.4rem;align-items:center"><input type="checkbox" id="bt"> Dia inteiro</label>
+    <div id="bh" class="fr"><label>Das <select id="bi"></select></label><label>às <select id="bf"></select></label></div>
+    <label for="bm">Motivo (opcional)</label><input id="bm">
+    <button class="main" id="badd" type="button">Bloquear</button>
+    <div id="bmsg" class="msg"></div>
+    <div id="bl"></div>
+  </div>
+
+  <div id="t6" class="tab" hidden>
+    <p>Cada profissional tem o próprio WhatsApp e a própria agenda. O cliente escolhe quem vai atendê-lo.</p>
+    <div id="pfl"></div>
+    <h3 style="margin-top:1rem">Novo profissional</h3>
+    <div class="fr"><input id="pn" placeholder="Nome"><input id="pw2" type="tel" placeholder="(19) 90000-0000"><button class="sm" id="padd" type="button">Adicionar</button></div>
+    <div id="pmsg" class="msg"></div>
+  </div>
+
+  <div id="t7" class="tab" hidden>
+    <p>Crie planos em que o cliente paga uma vez e ganha uma quantidade de agendamentos. Nome · Preço (R$) · Dias · Minutos de cada corte. O código vale 1 mês a partir da confirmação do pagamento.</p>
+    <div id="pll"></div>
+    <h3 style="margin-top:1rem">Novo plano</h3>
+    <div class="fr"><input id="pln" placeholder="Nome"><input id="plp" type="number" step="0.01" placeholder="Preço" style="max-width:100px"><input id="pld" type="number" placeholder="Dias" style="max-width:100px"><input id="plm" type="number" placeholder="Min/corte" style="max-width:100px"><button class="sm" id="pladd" type="button">Adicionar</button></div>
+    <div id="plmsg" class="msg"></div>
+    <h3 style="margin-top:1.4rem">Clientes com plano</h3>
+    <div id="pcl"></div>
+  </div>
+
+  <div id="t5" class="tab" hidden>
+    <label for="zap">WhatsApp que recebe os agendamentos</label>
+    <div class="row" style="border:0;padding:0">
+      <input id="zap" type="tel" placeholder="(19) 90000-0000">
+      <button class="sm" id="salvaZap" type="button">Salvar</button>
+    </div>
+    <div id="zmsg" class="msg"></div>
+  </div>
+</section>
+
+<footer><a href="index.html">Voltar ao site do cliente</a> · <small id="versao">versão 9</small></footer><a class="feito" href="#" onclick="return false" aria-label="Feito por Lyzzer"><span>feito por</span><img alt="Lyzzer" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAaQAAABkCAYAAADJ00Q1AAA1fUlEQVR42u2debxkVXXvv2vvc6rq3r7dNIPQDIKAiEYkiiKiCU4oRjRRkaeocYohERVx9sUkPBPlqRhRxJGIMypEMDgkIgYRI2BEn6iAgsyTNNB0952q6uy93h97n6pzT1fdAe7Qjfv3+dTndtete+qcffZZv73WXuu3ICEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhIWHbwt/vpo858xA9MI1EQkJCwvLBpCGYiXdtr8fsvC+vuu5edk2jkZCQkLB8yNIQBHwK3XN8T15pduKoqTu5+Ge/4eo0KgkJCQmJkJYVJ+6s+xS78048x3Q2s7lzg15yDubGNDIJCQkJiZCWDf+4Vl8xtguvmOrwmMIzQoNvXm/lR3TT5EhISEhIhLQMeBG67+P21BfY7XjZpgkeoVMUI9vrjZs3yHfPmJbkHSUkJCQkQlp6vG1nffouu/BKHM/csJ7VbYc0WmTtQn7029v4YZoWCQkJCYmQlhTvR3eTvXhmtru+oj0uTyw2SUML1Agd0+SujZN6/tmY69O0SEhISEiEtGT4e/SPW3vzQtZw9NRdsm93ikw8Kh7faODw/PfPb5FL05RISEhISIS0ZHj3Wv3TxhqOm3Z6eHGz7IRBGw0mRTCa0cKq23i3nH8h8rs0JRISEhISIS06XoTuu+9a/mzVrnrU9LgcPL1ZVuEha+LEg7WweozpoiO/+PVGfpymQ0JCQkIipEXHGxu6/86781KnvGT8HtlXHC5r4n0DfI5YZdS38c2Mm7PNnPU15Ko0HRISEhISIS0qPrydPr3YgddMFjyjO8Ha3OBtAzWKRcDmTDYcmVgam9rcdMt6vpemQkJCQkIipEXD36C7r96Zo+8d05cXU7KfTpI3LK7RwhSKeEBA1ZEVBS7L2bjpLr53GpJkghISEhISIS0OvpTro+5+GK/a4PQl3U2yi+mgeUbXWmy7jTU5YHCAL6bJNcdmuV48vkm+k6ZBQkJCQiKk+42X4nddt5rDb1rLX5k2j9YJGcu7qLUgQuYUYwQs4MGLohSINulMT8sPT0UuT9MgISEhIRHS/cIr0Ic8ZDt9YXM7ednEJI9iE+QWMYK4AsQiZDhjKcSTSSSnvAldy6133sJP0hRISEhISIR0v/BM/BN33o2jjcqRU3ezl9fgFSF4bxBjsWpADKIgKM6AFcXYJhNTU1x4RZvfpCmwMKjqPsATgC6hn5aUv4o/DTAhIuel0UpISHhAE9KJ6LpNLQ5vrePFmfCE6bsZpYvQRNTgMXhjwFrUG6wBI9CggffTeFE8Tq+avE3+/QLkpjQFFozDgU8CRSQjUyEiF4npZlW9QUSuSMOVkJDwgCSk49C9xnbiL0bX8rKJSQ7otmnZFpDR8UpmLFYsgmAUxGhgI2voOoPYjMxmdMbvkUvudaS9o/sHF+eP1l6iqioiqRtxQkLCA5OQTkYPMTtyjBvhKJ1kXe5wklM4xWaWTBRvDCqChNzu3vrdO8FbwdCArKW/mV4v3/k4cke6/feZiCT+tPHf1bCdiWSUOkolJCQ88AjpH9bqc6fG+BvveBLjrM0NmBwVxViP2EA+aoJplDKQZATEAAaLB9NkspiUy+6c5Jp06+8fVNWLSNUzKgnJV34mJCQkPDAI6eXovn+0A0fmoxx9T5uDtM1IE/CejgoGwWYxLKcGwVRIyYb3MYgYxBikkXPd5ju58KNJRPX+wCeySUhI+IMipL/J9EkP2YUXOKfPGb9HHiKeopHjVFGfIQq2XJZbwXnBqmAIYTuI3pHY+DNHPfzy9g38LN32++ccAeUeUZnUUPWQqu8nJCQkbLuE9OfobnuO8KQ9duIYLfSJ7XHZCcXajNwrqIDGSBygCOorW0YASCAlESTLgAyhyb333MZlSSZoUVAOtakRj6sRU0JCQsK2S0gPXsNTdn0Qbyg2coApZCzPUEZoa0EOGB88IG8NhQTLl3nIJRJRaSrj+t0VbTqNHFd4veza2+Wn6ZYvqqd0f36fkJCQsPUS0mvRA9e1eG4xzuNsQeYNqoIXAbGoCF1r8ALGaNg68kJ4IxKRMUFA1Ts0szhjQAvGuxvlP89E/jvd8q2GsBISEhK2XkLaLeeRWcGjpybJfANncgoMTd/Bmqi6gGJEsUZBDRiDi6KpVgQVQAURUF/gTQM641w3fjMXp9u9qIgOau+VQnQJCQn3C1uVEWm2eEpnXHd3Bd2Ox7g2uenijQUrYDxGwKgBl6EuQ73FSCiIJbNRKcCgeHCO3OfcWxT6rfcgP0+3e9HmTJWMSnKqElVKakhISNh2PaQPjeqROspjpSvNTPCFRzNFMsEVEo1bNHsa94rEoBgMBgx4VTIs2JyOMWReEGv47V3ruSjd6iXzkmTI71LILiEhYdsjpHege7abHJUb9s8sRgRvgBzUghZ+5npbCIoMpSqDAZ8ZCqc0JEOzDCcGaxtsYpoffqgwP063elnISABfKZpdMajqbsAbgB2AyRpBlkmZuapeaoz58gqd4+OAF7FlqryE6d8LhX5IRK4B8N6/TUT2pp/RONv9mfXrF/j5QZ5y6SV7oAl8VkQuHXCdbwT2J6h3lN9TV/mo17bVlT7sAs+/XrDdHTB3M1X9mjELsw+qugdwiKruLSL7Ag8CWnP8zYyIwYDnY5CyiYvjUgDXq+otInKFiPxoiZ+bA4H9gJ2A3YG194ErNJ7/R0Vk3g7BVkFIo5ZHmpyndKcYk5yuCJIFFQYvppcxh4DXOPF6VTDS+3fwlDIwFkuDrDGit91+rfxX4o4lI6SFGLzlPTmR21R1L+CYCgEN+tzzvPdXGWNWoj7tPcARs50fcHlJRqq6P/B6YM+tbC6UGoa/AC4dYLyPBf5oazxn4GpgXoSkqgcALwWeDTxUREYXMB8XY06rqt6pqtcCXxeRUxaRiB4JvBJ4BvAQYDWLE3b/FrBtEdLIrjyZgj0UlIxCweBRDdl13hgKUazEwtdymGIBrCoYJ2FvyRjUeRq2RVEUcskNE6S6o+UjpVLLTtg61Bw+AhwWV7C+4nWU5yfAHiJyDCxvwbSqvgx4JtCmrw9YXdmXHsh7Kn82BUzE1fRUvB5DX+R2PgsCqf2syz/Nd8EhlXGciAZMBxjRW1R1On5uOp6rqX1WBvytr3lQg7zxuhdU9+CGXUcRx7wlItPzvF9vjouBvWvHGAY/j/shs5yjDDieEZFdgF2AQ1X1ecCJIvKD+zkX3x6v7cGVc/X01ftnmxP1e1C+iug1drapkN270SdlDZ7c7WLV4n0QSpXor4parBE8Glx2YxCNqd1xGAR6rlPXd0FycoXr77iZb38+iagu5QqzGkwtJzBR7VtW+gRF5DJV/TpwfDTgtmawivg6WlU/JyK/XsbTO6Eybo3aQ10AI8CXReQbNYNQElBeISQzT4M4m4Ff6ALCVEJpeSUEN9vns/g5M8BQDyMUMwdB6hBjb+axkJqXB6CqnwdeHud3nVSFweFrOyD8Nhuxz/W82NpzVsTF1ldU9XUics59IKK9gA8CLxiwYJAFnl+VvHx5HFWV+zKpVi5ct4s+0XV5mOvScYLgyAWstahmiBcyA5kxSNncSGTLlbmGqen8NOBoM81/X3t76gi7TKTkKhNS57nCXi58EriWsMfh6oZAVaeAvYBXL6N3dALw2OjpNKKxsRWPo6Gqvwc+PIdBtUOMuc5yr/wQI14Jgi+ZXZAhr7mIQ+ZxzIXM2fkQXXmvPhvJaCqOXYst9/x0FmKc69qHnb+vvVzt3PPoXa9T1U+o6hELnIO7A58BXli5tsYs86k6d4Zdn7m/z/6KEtKbG/owMypPbG+g0e2CKxAtQBxqCAWxseDV9C7X9EJ1QSIoDpITVAvUeYwR1k/fzH9+FbktccaShusGTTyzNXhHFS/pKuDzlRWtqz7gItKI/z5aVR+xTKf1t7XVdT08lYnIl0RmKouoamkUCmYqqxeR3MpXUVkkDHsVAz6nlTGarxKHr5zXbJ91tbEfdC7VV90YD/q9G2Aoq2M6KKSn1bBtPdlgBiN4/1bgFYSkmNIj1VrIsGzF0q3dh/o9GXQPZru+TnwVAxZ75XU0gUkR2Rn436q6bgFz8B+Bp0dSa8XFjQ64Ple7f9Vzq8616hwo56hbaHLTiobsdtyOI9wEf2w8RnMyCd1eDYL40G5ciUreamKqd6nmbRAJmnXiBY8g1iHZKFOacdGvN/CjxBlLAleZdDpgpadbi/ddwRlxlbtPDEvUV4LThPj5a4C3LLF39E5Cxlk7Pn9SI8sGcA1w2gByNcBo/LtslvDQUnjC1ZW7RINjIqmXoVs34Hr3AMYqXuByee5SW91Lzdi62exf3OT/2/g5U/us1LyWxhJcQ1YL0flaGNNWPjcNPBF4GnDmPObgi4CXRaJtMTNj0g4g+jIsu5Bzb94XO7BihPQy9IDGKp7qJllnG2RYjDdILSSnQ2Zaj5xEUDFIE1w+SjMf4a67buT8LyC3Ju5YNk9pxr/jHtLWc4Ih4+6DwCfiw+Vr4QUbDeyrVfWb93eTeBZDcADwOgb3jNIKOZ0qIjcMuI4bVfWLhJTcuTbxzZCFRJVYqJFaTti72hRJ88A4LrZi0E3FwJfGcjtV/emgdOSY1PB14JGRhMvzK4Z4MOXv6wawOyTE2IznN6WqjxGRhzEzKaROQK4SnvovkaFZuC8G9q0sYOp7cK5CDLcRkmJuBjYzWLlkLlvranOhAewBPBQ4oEIUMuC45Z7Nc+dJSK+OGYLtmnculWejiOcgqrpeRG5Q1btEZGNlDGeLtpVz+cZtgpAesp0+wakcIjAiI0FZwWjvbqjpC6XKAAuoGr0nBMkMWA/SQL3y89X3cFniiWUP2dU9pK3rZEU+raovjyvJyYrBK43aNKHe4q3AD5boNN4Sjcx4XJn6imFrR+/nEhE5bZbr+Icldy9Un0rYvypJ0w4wPmWYahQ4R0TeLjK4z5iIvGsZzvk5wGMqXkudoG0MM5U1XmeIyF8NOdY6VT0yLqpMxRuU2vGmo/f9cRG5comuaw9VfbKIvD0uELrMTCAxlfv0RFXdX0R+M8vxngIcXPF8BiWjKNBU1ctE5HMicomI/GI5ntMVCaschz50+x3kSNthV+2CU1TDWklRVDSsFuLd91JhY4kGT2InirJANm+Qq2Xj+rv0P9/E8BuSsGTe0baAD9JPQ3W1ZyCLRHWEqr5gCQzLEXHV3YkGsb7aJpLSqSs5QKr6alX9asX4NQYsOqpexodE5KhhZLQc8N6/FvhS9I5chUCr87NdGff3DSOjiANE5BEVAqtmklb3eN4nIq9fKjIqPcxYuH08cFN8u1PzrCTeq52Ah89xyEOA7SOZ2gGhzdKTPMsY8wQR+eRykdGKEdKeO/AkVR5nC8RkdLsOjwZh1FgI28tekXK/aGYmixobG8Ia1BjENBDnuOL2W7g08cSSk9BsGUUiIo4F1h8sk5f0DeB8YBX9fQGphYAy4LglWYf1q/kble8rjecq4AIR+eoKktHbY7hwp2jAzYCQWqcS+jpRRN6ykvdUVU8UkQ8Q9qnalaiP1oi+qap3AW8Rkb+b47AHxntVVMJy1cVDQ1UvEpF/Wsa5exHwlQqpVvd5ygSDnFDUOhsOYmZCTDX5o0tQr7hMRF60Evdz2QnpZHTv0bU8kw67aBBCDd5Qv8VEP4MutB83JkgESfn/uD2hYkAVdQrTyqbpDXzv05jUEXZlQnawbejXfVhVN7NldlsZynHAU1X1qEU0mkcTimDr4ZbevkBM8/7AChr2U4CTKmNQTSkvDeBUJNNbgdeLyEkreL7rVPVzwP8hhFyLAWQk0Vi3gKtF5C9F5KPzOPxDajayHqrzIvLNFbjsiwjh3pyZWW1oiDHlwHZzHGMdWxZFF5VnwYvIR1bqvi47IZk1HOI9h9Ahd+A7HgtkYmJdSFQCMoIRwZiY+m0tYg1iDCIWK1FUVR3OedrdKX6x+eYli/0nzB2u2xprkAatNP8reiENZm6UlyvhUm/tDYtoPI+NRrE09PWEhoaInCkiy94ixXv/YFU9l1CoW+6/ZGypM9clJDxcAbxcRM5YQTJ6OKGG5hUVkm8ws46qJKMmcCFwjIicP8+vGJtlgZUBk6q6EgvfOyrkUX3Wqnt8280ybvsDu9LfY6vv+eaEmr0L/yAI6Q3oHnY1h7kJ3bk7jWt7KBSbmX7mnCnrzqOGncZ/GwNiwViwJo4vGBTEMd7ZwI+68DsSls0uVAzYXEVzWxtOiw93tVjWV1bA08Cfeu//chGM5zEicljFcFa9y04M/1wH/OsKGPYDReSLwJ9H74do2B1b7heNqOp/RMO+YvqQqvp4Vf0KQU+uUzPMpuL5lkWsX40EesV9WGwNWmQZoCsim1fg2qV2reUiKqvU/jVnOUSLEBr2AxYd5ULsBpGVU7dZVkJaPcIh0uZJblIybzAKJjd4C10xURzIoBr/rQbnLepMyGxwGYUPpkOd0J7uIkAjU67ZeA/nfTDJBC2XZ1SXfqkXxcFW1vyx5iVdAXwuXkdZfFglWI2fO2ERvu5v4lh0K+MzY8xE5DNLuTE+xLg9S1XPBJ4cz628p0XlPvuKV/dZY8yzl/s8a+f8bODfROTR9Peyssp5u9r5nywix4jILffR+zc1b7+6n2ZWYN4OqwFkwDkOdIiZmbLtK8+zr3hhK4ZlHdTtd+DxZLoOyMSGPSEjmJC2EEe3us6JnV97qt4exaMxBc+ox2MYnxrnxx8oJCUzbB0hvIVKuawUTgeujB5BuxZGs9FjOEhV//F+GNA3E/TGpior0vI72kBLVS+L8jTLadhfR8hKe2Q07JaZhata8eg88FYRefVK3qx4zl8GdqOvuVafa+U5b1TV18dU6cWMCFCZHyMrMAzbV7ybxbieuYRTlx3Ltop994g+tzXCoZ2NskYN1mSh2ZEJSQuoRH3UQEI+pnNXExy8VQRBfSAnO9JAWy295u475Iezffef4ne9GHN74owlJ6RSH25rUg8attq8TlU/DnyUfq1JvSbDqepxqnp2lCBaiAF9BCGzTiLp5ZXVaTt+V0dEThWRZZubqvoe4O3xfKZiGKeeOVnWF90BvGklM//iOb8feFM8v+khZFBEgr9ORP7aGLNYYcVqgkc1I/KzqjpRzvdZFmjlfJMBx52XbY7Pk8Z7sh392jDlvtf+VbOW/R8cIa3ejsPV8Uh1NGwT081Qa1AjIdPbxWZ78VZK5baKCGqDB2URRA3egB1dRceKXH7VuA4UUT0e3W+XPXhWR9j/KV5bxmBMFmKvNpvpHVpP4STuZfX3qEIRLojY0o8DDGKzKGkEYjN8lgUV8t7xLKHLYG9C4ly8KiN4jccSQiv2RgNL3EtzBoyNhGxAFLHxrFxfztF7ogdpoMjDVlvusWJAPd3WDrQRLnjNh+TsxJcDSeljUUblTwg1SKUSdW8vIsr93xdJoWMJlf6TFQMqwb5oV0RWA/8uImcuo2H/DEFEtk0/SYGaYXPR8F0LvFZELlhhMjobOIq+JlyLwXprLeDHIvKahS4e5hHigi218vYvjfhSL75qx/dDSGUxPL8/DEJ65xp/cGMVhxZTrM1yTFdQk6FG8OIRBVs2kwidvoISQ0zrDp1hFVFFtGSI0IzvtvHf6w/PHeL9tEY5DNVXuwnZ20EuIThojUFcNuPaVRQXpYiIZOHLxAoBUYcSQoyigniPkZCKjvPgPU5M9PAs4mOUWaSSnFE+PYpqgdcyicMhXYdDMWJD/kZv2RNNRREZ0rtQPOx7+xwIisGGpA/JwDtorMbR5bwb/6dXTMciPqT12pQyBl32bKlnkW3NOI1Qm1GtSfKVcFWbILx6uohcPU8j+seq+pIY86/K7khcLI+o6ublSq/13j9YRE4FnkdfpaKUnCnJt6gY9h8Cxy9nQeSAMfwj4OOEPa7peJ7VhIusQhgN4OvACfdhv2g+BrtgS2X1qnrDfLyQ+fSnqoYg5+oPpfV5NQ+CKeWh6l17i8rz6lbyYVwWQtp7T3m677CPU4wL5YgqghoNqt5FqRo0pG+mBqmgYIUtDo/LM5w6rrj2VhmYfvm/0AOaTZ42sUke2p1ijJxCgkCrEGuZqncTjSxgEWNQLxixgRQpiSaQS/CUOrje7ld438fpKVgQE2uqDIKN78X6qbiN6Am1V0ZAcTgxgdTERBI2xGrhOCHDVNNIdoErbazL8nhrKDrQbq7CT27iWxd/lZPO6chyNSjsnWkMMWwTKg4icpaqvhh4Pv1iUKk8mAVBePWvgLfN87DHRQXmaWZmPTlVnRaR1SJytohcuAyG/bExLHloJKNGxfCUj0B53U3gS8DbVjLTKiYvfAR4aCTukcr9KOdZu2JgPywib1rkuTzb/6u2c655PkwJvTQ99Vbugz7nagQHW4rFzunxqKqpPJbV5KRqj6oVfW6XnJDemumhXvkzL6zRDJxSqEFVyaIJLzTWgw8LhpbJDj54AN1M8c1MJ8Y3yk8+3h3cVO1Bhseq4VARxhqrKQqd0chMSwFXKb9CQ8dZTAi1SVwva/zpFTWhW63EmikjMRU97lT3Q2zBy8IHwundeukHg0Qq3lPUQbIq/fMJsZ14nn3V8x6MDd6i9D0vUYOOrsFNj3P298/l1P9cPjKascKT/u7ftoJPqerhIpJHAir3e8piwwJ4oap+XkR+NYcxfZKqvkBEymSBGeKkItKKIpWnLoNhP0JVT42SOiU5Klvqu+Xx50nLoTs3xzn/LaFL7o6E9OpR+rpr1ULOJkHI9MQl8DQHpVcP6zmlc0QSlMElEfU6IJ2D0FzNI6o/d91aiHHQ4stUFovDSHdFQ3hLTkjrduLQYpIDu0VsIeHxXnt+AhpvTBxlL5XVg1YGTUxPu85kBlHHnTfcyP8b9J3HoA/ffgee2m3zYOPRvMWE79DyZYWz9o/b+w4NezVo/8urt9+YHonJjNla/j5IH/V/p6hGKomkUZTEZwRRLTMAkHrVQ0U4Nm5goZH4omZF+fCirgieY27RxohunNogZ13wHU45f1yuXSmnY2tYaS3QS/quqp5DKLScrj385Ub6XoQkhblkhd4WpXdKVYNqXx8FmiJy+lKHw7z3rwHeHT21cWYWjpb3pxPfv0NV/8kY84kVJqN3Ry+0yUztOV8LlY3G5IU3isi3lmmhVc9ImytDebEymM0CP2vn+H29xkqYmWG6oqH2JSWkv0Mf3RrlaUWb7Yq+4H9uJOwROYIigynbSQSPQ430MgoEBedQyZhimhHjaLjVjHfa8oPbOwzcvNwx53FeeaoWZGJpd6cZLSIJicGi4GNEtmQYCT2VMBI5QBHRSEwe1ATtPJHwXiQbNBxHfdjXUhOvMorFmvJWi8FKfz+s7J4RqMdDloUJUnISiigYCccXa+g6Ty5Z9L4Ie162G4KQeZONnXvkjEvP46Pns+hx9EGTut5dtJzgZjnDwYuIT6rqs0TkQdFQmwEr5Ber6teirtggg3o0cCR9TbXqarZDSCK4mrA3spSG/QOROEcqpFNVrTaRMMvkhROMMd9eYTIqlRfKvaxqqLP0NLuRjP6fiBwnIpcs1elUflpmFtyaeB7nAXfXFh3UvLj5LNzMgHCczuKRyZAQXTuO2fmzjLEOCfVVv++Bu4f0oJ31kMaoPMa149X6EMWC4HFE6W4RwUtOF0fDOowVcIJXS1s94h12YjOrRpr4VWPcqm2+e8ctfPVs5PpB37vTGId2O+yIwxeKVU9mbPQ0XM/D0DJmJ8HrsD2XTPutMCSaWFfWQvVvqZS8GanTa3DxZujxDSitKxsLEpsMhuM6yror0Xhyov0kC+ewGLwN46YarksaTXwr5457b+f0yy/gc+cuLRnN9mBUycnN44Hc2rykS1X184SU6GoyQmnA24Q6kNcTNMUGRqjpt2YoDZlnZvLA+5Zg4700OOuAU4Cj6W9UN5hZSEn0+EaBHxM06X6+gkT0qNir6pmEPS7D4F5OJRn9h4i8dQUKdE3Fc54E3rOSSR/3cY5HTprxLMs8Q5DbNiEdhz46H+NZ7Ql29joj/lG2j5CamQtZa4Aa1GZ01eC7nkwKbN6ExohenU/z5fXXyDnvHdJi4u1NfUZh9bHtaTEK011Pph6aFmfAlWnkkYR8GQTzJUHEvR0f9nzKPSPwGNGQaBAcLXwpABv5w/eITDEqYTtKQmagiK8QcfS+qnkz3TAgYnp9NSJhGlQF8RpdcY+PTYHNyCpYPcZN91zDaedfwJkXLY9SRbUNuA6Y3KUWmmfbw+cJyQ37MrP+pFylTwHPVtU/F5Hzaob1WODx9DPCqpvEPWNqjPn8Uhl2QvLCkysemq14reXKvqwx+gYhK+3GlRpsVX0GISHhj4AJ+pp0WiOjsl3354wxr1qp0615Ecq2iXr9kWFoOtkDiJDWjXKg63KQmyKjgYshr5mSM3H/REDyLg21eHK6GrLwjHoyY7AySjvL+P74LZx5871y4cnIbYO+8/HoHprz3IlxOaCYJreGQiG3IfJsVbCR8EK6dd9TIWbdxY3nEJWDQDDikSJ+VoLfo3FfKLQRVKRMbkBjWwwQDfl1mODxSdlDoxcyjCFAFXC2R8Zg4t5W39vy0dRb9SH5ojEGjVGuuv1GTnnX9+T0FZrQ9aI6FyMDIyKyw7b2pIrIldFLek+FdOtGvQn8dQzZVI3r8THNO6s93OV7G0Xk5CUy7EdGz2g/ZjYfrHqyZW+fEUIPo5VuG/EK4P8SxD6nKmHF6phX061PWo7mhPOIDAyKDmxLZFT96WseICxfm/nlI6S3obut3ZUndCbYSTTU3ZTEQ3/nX6rDJC5ktIkF78lEg1dkx7h1/G6+fddv+fQ/Yy6f7Xv3g73V8Gj1NBuGrsYMtaYwqUqmwR+K9j7sVZXp307IeklrobBURIMXVG43ab87oJos1kJF1XFj6ZY1QWHzpyyvDXtNYgMZxmNpTFYoEzzIQsjP2FAIqxI9JA3JFN6KFkVXVhVtaG1Pd/UqfnXDlfzLey+SryzznKmGnwZtiGoko0cC/73NPbGqXxCRlxIanbXZst5jGnhGzKQ7J/7NO+L1lmnVtvbQN4BzlyLNW1X/Ohr2HaNhb1YMexliKlsztIG/j/2DVnKM/w54B7A6nlOrNrfKEF0TuFdV/8EY8/FlPMWiYpzr4q0az3eHbXBuK8Prl5bcSVkxQlq9loPsiB7W3SgNdTjjQ/sIjZlog2i7Ew28TmOMwUoLzXN+O3kXn/jtDZz7aWTOAs91ozy5kXOALci6HtSRoeD6haZGAytolpNXo6em94GQqOAdTon7NSC4MFYqgcy8RWyGmAxsFtK2rYLJ45f5uMEUTYO6uGmlZUJfqHXqnUEUli1MbLfRoCE2CowZcF68eExrFbQMP7/xx7z/vb+Qb2wF87wqzJjRT5v+C+DT29pDa4y52Xv/ERH5JDN7JlUJZpSwl3SOqu4VPSbidVdbSneBXFXXx3DaYhuYkwgKEqV4a4stN8fLhnLr497LF1bYKJ4OvLIS9mqwZTqzI6iLXycix69AwsVkZfxMzasoopf5aFawTcNiBATYCjNil4SQttuRIyc2yH6FxzSbtCnIZ5ReEQmgfMLDno2nQDJL1hrlXjwX33M9X3rnBjlrPt/5RvSwHdfymG6HiU6Dtoyq9YVkxqkTpGvKPIEYOssaNERiLVFUZlBilp2gGepjCCZE2bIy5y94LBJqlcTmmpkMgxUrBpEMMeFag5SQDX9vwfWS6PqKEGXYTjFSaHhPEbC5NsWIKbX+rEdti2k8l139Az522k0rJuniaqsrqa0kyxXu4ap6yiIXLC4XKX0qeh6PjR5R9eEtu6Uepqp/ATyKsOdUEnEZaiqLa1sicoaI/GwJDPtr6Kep5zUvtnw1gatE5LXDsgOXiYj2BD4GPCca/IwtU4+rDfV+IiLHrlDiwM21EF01bb/szHpEDJNuy6grfT/wCOlda/Uw5zm02ETDtPAiWhgjTRenXq+QR8o0t1CLIwXYHDLLTZP38o3rb+GLH0N+Ot/v/QjywxOdms0bWDM9SjExJo2mxzVE/LSnMQY+D9lp4m2pCBQKTDGYjobtIit4B4gVtRm+lOgxNtS4agitqXRxLofciljBGE+uHvGKZooWgvo+GeE83hrxRtDChqigUTQWW+gIuI4PKeBdRawTXAZeEeOw0+sZLTrcddrPVq4XTYWQhvU+KleUZXrxG1T1ScDPYAsJo+aAB6MeGhxEhDA4JbY7JF5eXQGqqo7PM/zzAYK6dHVfSGrhyn9R1dVx4SK1MejQT6v+10U07Pur6qn0s9KyinGv7wco8B3gdSJyw0pNGO/9wcAHCcrnE5XxrHZ5LZMuDHDWSrXQjvglfSWIbm3RVXqjT1PVfxKRf2TbxAPfQzoR3WP3MY7a1NV9NBdnwPuutIzE5AIPNpCC96H9BN6DcUjWANvgknvu4V+//3u94GLMzQv9/nf/Xn4AhPrtzSQsDW5U1Y0iMlYLY2ltXpWV4wfH19aC9ap6gYj8dtanNUgKvTquhKeZWVRY/tw3SrEMGgcfDe7pIotTpKyqh0blhcfRb2lh2FKtufQ2biNk0z1CVR9T8fYG6RH6IQuCqqpDnfCrf1t6YjfUzvl5wIeAvZmp1K2V8GY1tPgrETlXVZ8aPSU/4Fzmo3Dg2LLrbV0vzgJXimyxHXC1qt4kIg+teLvVV7nX9faouXcm8BtVvceYxekqEFP4qzJc9QXbDKkfVfXGzG4zo8bksPGqKr0/MAhp1XYczFqeoRukZRsoShaVCIrcxRCWoaNg/DTGZEirRZG1WD81zXd+fyNnvXdy3m2GE1ZiWSVymff+V4T0YjfEYFTnVvc+rsL8LB7PfI4nA46XiUh7ASGKDwJ/Sr8ws7pHVD2nQe0bVgEXLlYCQTR8Z4jIw6OXkbOl0GZ99bs7Ye+qlAYytdCq1sJmw8Z7WEO60svpEvZ8jgc+VTnnp0TvcHv60kV1MpHK8bsisi9wRiU0qgPIaFBhqMxCqMKWKtklIf018IXaHL9eVb9NaHnRifey/v2ld3cU8IJI/vd47ycHkDdS6rX0x0YGkEX5/qCXrf29Lf8uktaUqr59AW3aq/VxfgHP1bZBSP+Mf3Brd54/WbBfzDwTdSV7h1wBBeccoi6oFuQtpkeb+qvNd8rXf/h7zv4GklqQbxukdB7wlAEP/aDU2GFhgbnqOOwcBDXX56mtjOejzly/zgtU9RvAS5gpTDrIYFe1y7JIGouZGbYO2IO+DFA+Dy8hrxgeGWKgdY7xHKZWXVcaaIhI3Z7sTchGm6iQ0TCjV4Z6W/TVGuoe2mxzRmfzIJi5Z1V+tlGvFK3gTOBFwM70VRCELfdKy3q13URk9wXMrXm9P4/PFSKSqeov56tGP2Tc6vdz2yak1pgcrDl/4jeT5Tmu64NemwecR1C6voiZb4IfWc1GES66/ndyxnsml1yPKmFxCekU7/1LRORxUY25ydz1C7pAghlmYBb6sCn3rwr9FODZwJpofMyAFbfUQ0+EXkf/tshDX8TVug4YEz8LYZgBz3pRGxMz5O+r11X/fdll1g/5TJl6ntVCXQwJvdnKZ0yNQM2QezqMWLMh88czXPC0Osd/Gvfq/m/t2urFpFntmAzxON0CPHwZch/qi75q24iPDQg9LiSCoA8oD0nWcoQU7JaH+hkvJqhXG+g6yHxBrg7yJp1Gi2s6Xb51/Y3826nI5cnEb5Ok9CbgCyKyd1wBywADUq1TsgsMucHgfZG5VIl1FlJbcDOzaJi+Arw2hp1ytqxur3uDdxPaJywmvKrauDIe5OnVCWSuMMx82w0M82oGhc06A8bbDAm11Y/l5zivYe22Z1MaMHMtiAZ4ddV7//6YHfjaAV5bdWFi5+F5zKezq8xyP6X272789yhwujHmU/OYQ9Vi72LAs/rA8JD+uaWHmTGeql2a4ukWQOFD4WmWocaj6jD5KiZzw2WTm/ji2+6Rz87n2C/P9PGNFrs3W3TzUK8TxFgtxoZsNfEa+g1V0ZV+dpxRpBB8qHcN5U7eIlnlb6RJN7Rbijm0zdAQUGzoRNE1MTsvirS6GRMXNSZUKonGz4T27KWSuMnBdgzGAplFu0Gc1TuDdw4a95I5YXKnA+nefBNXnfJtuXUrJ6QfqepLCXsUj62suB1bppPKPFaIg/aMhu0XMICY/BwEVFUAWKin9CHgWcCeFaPbYkslhzZh0/5MEbl4kYfciUhRMSSzhTS15s3VP6fzMDxzjZGvfZdX1XwO0tNZvNf5kKMO+Tnss37I35Y1Yo1yL2aWef46Vb0LOB5YG+9/dZElQxZBOuTa70tmmzBzr7ZU3RgFviIixy7gOFXhVxkwL1ZUg3JRCMnuxBHq2LUYZ1osjSI0rSvEkomjkedM59uz3m3m+xtu5it/5+beeHspuv/qjCMaq3kalj1UWaOCiEM0dAKyTsHHdgzWahEUfwKaomV7YQlKCqrV30to0ieEWiSVBt1QH6QGETGWTMLay4hFjcFj++0ixMxcfZkm3UhhpfhDtV2EIOQjRsUYsJloKwtdoMRKgUOz7bWxeq3cbpR/++nvuW4b8ZIuiQrXxxMEPXevzanqqs7O42EZZHzMHCGF+RixqmqzXegqUESuVdUvAaV0jR2w+i+THm4CPrMUw02/a+ogb6Pe0TRbwCp8PoQkQxYMZc8oO8s51zfoBxWczjeUpfPwuJjFUyv/34j3Vudx/09U1QuBE4CnA2OzhOYGeTSDvOiFhp6zymKvQdjTPEVE3rygA6lmItKokBqV0KNs84T0vkyf4Bsc1p5AMo86j/EKWYZ34G2G5hnXbdqgn73xFvnux5BfzukVjejj1+W8sHAcOTXOXqo0sixK+AiiZYepcHtjUqRov9seKiZktZSFsN6IFyqdkCQkXtgo/eNzOmJjNozBmEqXWELhbpdqT6QqIQlKHpVRpZfIUaqJS1zPqrUSvCYLWS6YHO8VzSx2pCWbNtzIhVd+izPPRLYJQooP6/XAm2L7gCcTBEb3A3ZV1VERsarq4+q++mCY2nF0yO97D3GlsVgvxFPZlC5li3rZSpU016ou2g30K/EXgu+q6gmxe+mgBI7SMC9Vr6MJ4HZgu9LAxowsM8BYa2UsqkkNUvm7erhxIeEkavdzmpDBWFcxbwP3AtPRE6kaaa2mIQ+43zM8YxHpDiCw0Ett5jiU5+cqc8DN4ineOs95/gPgB6r6NEJCz+OB/Ql7i80BY1jv8iqxY6sdQKzDvHYt57eI+Pj/O0Xk+8A5Igsujp8UkVvplyTk8ZwKVZ0GVq9kp+CFuo0D8d5d9Z0W3jrZZm0jw5kung45gmluz4RtcsFd6/n8FRv5yXlDRFFLHI3uvmaE568e42g/oY/oTMkar2RGIDO4KIhqjemdvO8Rg8FX+iBqoBt6jYeE2DDPYiSoKJheIqZBo7oCUbmBqJoQVBSqxGN6ITqjJoYFDUrWazsuxvQk8jzBi0NtlF+2obDWWfBCt9mg0WoysangA+//Ol+eZuXUlxcb3vsHxwewqBurss6i8sDfUX8/GhRTGqtqW/SY66oxVKTzqf9Q1XX39YFT1XcCJ8WVZcZgdYGfichjl3JMVXU3kf5zpKrrynGqjeetcx2nagNU1df+vu7R1Anplnme7+4Dwq4K+Oo9F5E74r03A7wZrV5z/Z5GQsoGENLQeXF/5kLtOA8hJJrUve7uEI/SDvAaBy0ousxUiBCgsxgFzuUcKp+1lSahRSOkV43qHz9iN07q3MvhztPFkduCRiOnM7aK32UZ37zmRv3ayZg5ZVNOQA9fsyt/pg2eOb6BvTvjjEhoce5jG4ieR2SCxnYQyo77NFohpCDF0/NwNPYxUrGh0R7BSzFl+wmJrcbLn5h+C4iyb1PZolxMVP02CKYvAyT91uRiwqu3mtOo9h0DKz7L6HanMWrJtt+e66bX85F3XSgfJWGrhKo+DPgv4EH0s8aorYYFeEkpuJqQkLDMIbt91vB0gYNcl0wKnGTk2Rjt5ig/85N8+thb5XNzHeMt6F5rxzi80+RYhf2n76UlXfJWjlGHeo+oBG9khrcyB7NKFC7tdXmNmnUaSENRNO4/qfQb78mwQHtsjNdrIW4q/UR7bSWoatSE8KLE9hNiUWcQbzAOTLOFWNHrb/uNfOBffiGfTlNxq8YbCftjZWsHw8wkjRZBzTuRUULCShDSO/EHj+Uc6SfYuWFAmowwondZI+fddhtffH87yvjMgpdm/uBsFa/sNPjzomC3zqZQRCsW1OIxeBwIZGXr7+h3eIndVqXiEJdq2tInpZJkVMrGfMFzMgjeSK8BrAIzdxxkRnqMxIw5jV1eQ58i2/9cvbxONXaqiCTXEJQMVyg2a2KbOb+840r5wL/8Us5M03Cr9o7+RFX/MurVtSohlTJ1VoGNwPvTaCUkrBAh7bizHJa3eILfjDFrmSq83jx1r3x1/TRf+Gh7bsWF14zp89eu5pXdaZ7euZdVWDwW78uQmw8hOGsQFB9bR4Rk6WASQmu8slmR6fUykrIyIZKWxDCb9rRSNBJK3RtSVBTB4z2x6Z5G+qLn8UjZJXZGpZr0iUh9L/mh7P2Ed0gDzKpRumL55Y1XcPLJV8nX0hTc6vFmEVlNUEhYxczU2bI3zmdE5LI0VAkJK0BIb0Ifla/lqWoY8duxyTT0J3qHfPqOjVz88TnaaD8PfdiDV/OcLOeoqQ0c2O3SNEIn94Q8ktD+QayQlc1Tyx7hkQFEw+6Nim654yqx2ZDvbxFqJCcTDyNCDAWamOwwQKGjlMyU/nGCRyY976uMBmotvld+q1fAFSHIpwbxOZ2s4NJ7ruDDJ/9uq+hllDALvPcvJbRL6DCzvUOJHLiDJeh1lJCQCGmeGBvjSV55GJ6rjOE7V13DuZ+Ylh/P9XfHWj1yzSqe7x1PntrArl5pGqFrLN3C0RTFGEFFMaH5N2jweHwZrhu0idQjj6q7EzyV4Db50BBPJfZvjXtJ6mNSQ+k6mUhelS8qCUt9bJikYGICREmQkfBmuFuqcZ8qEJPYFoV3fO/XP+HDp9294i0kEuYBETmeEJqbpF97QsVDGgE+KyK/SaOVkLAChPQMdO/WTuw3PaE3TN0l3zEdzvoEZtZ07leh++w0xtHNFkd0JnjM9BRrDHgrTFowWtB0IaxW2OjgOE/mBRNDbWI09DKKW0Va80ik766UxRY9TyU4OS5m60nQ2CMDQ6/NuK8nYNbLqZ2P6adRJVZDmneZvKAS08zLtwiVUU4MZC267Wm+efnlnHLuZrk0TbutH6r6YUKtSSkMWu9o2lDVXwOfSKOVkLBChPTIfdjbr+bqW38tZ3+ymNu4Hoc+e/UOPBf4X5NTrHEFYizqHIUqNibr+8yX2zvhgTfgo28UmQCpOi8lC5WlqDaE1nrHqCQrqAsJCA4To3BB8cGoxGQFi3hwYmMmXahxdRXxGsVgo6qiU8H7Npig4CAYLB6xOUWWU6A0vcdIjoyO6b2b1su/X/pzfff50wvv8ZSwLOTzPGCfeLe3V9XHE4p8O/SVEcqp5yoe1EdEJN3ThISVIiRbcMf/XMWt5xWzhynege45tgNPNw2Ommpz0KSjqZa2XdU7jgPwYS/I43WG1lnweOKOTVBVsFLJIjChsLWXRyeCD9tPpemYIROkmqFlm1gRRCzWWKwYrLGIz3Em1DKJMT1poV6mXlvxov1uqTYLoT4byM5rCzU5LoYai0YDN9LihuJOOfvaSzjrfBIZbaVk9ELgs1R63sRpVxY2VlWiS1HLEVX9gTHm9DSCCQmLhyWTGn8Nuvdue/CE8Un2ntrIam3QkQzNgg0XF6VfvI+CgTYIGsRlqFTIRFQR72dWQpuMvmZcKHGdUWmu1f8bkDx4SGUNKwaMYEwWymR9RuYJHW3LWJ41IcHCGPAWZxTvBW/C3pO3BjV5qElyghSCcdAQRXLDONNcedLP5Nw0zbZqQrqI0Fp7kn5ad9njhgoZ0Xe8KYAXi8i/pxFMSEhISFgMMnqHBnRU1emW8PH9QlXbqjoZ3/9KGr2EhISEhEWB9/5gVb1FVbuqOl0hHx9fVUJqq+pEfO9yVX14GsGEhISEhMXyjr4RCWc8Ek756tReRSQtVdVLvPcHpdFLSEhISFgsMjohEkyhc2NcVa9R1ffF7qEJCQlLBElDkPAHSEjPAQ6i37APZvYMKvU5NgBXA1cuhux/QkJCQkJCQkJCQkJCQkJCQkJCQkJCQkJCQkJCQkJCQkJCQkJCQkJCQkJCQkJCQkJCQkJCQkJCQkJCQkJCwgMA/x9W7XoTWF3jyAAAAABJRU5ErkJggg=="></a>
+</main>
+
+<script src="config.js"></script>
+<script>
+"use strict";
+const $ = id => document.getElementById(id);
+const EMAIL = "barbeariapb11@gmail.com";
+const DIAS = ["Domingo","Segunda","Terça","Quarta","Quinta","Sexta","Sábado"];
+const msgErr = e => (e && e.message) ? e.message : String(e);
+const esc = v => String(v ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const hojeLocal = () => { const a = new Date(); a.setMinutes(a.getMinutes() - a.getTimezoneOffset()); return a.toISOString().slice(0,10); };
+function aviso(id, texto, ok) { $(id).className = "msg " + (ok ? "ok" : "bad"); $(id).textContent = texto; }
+
+const isoDia = n => { const d = new Date(); d.setHours(12,0,0,0); d.setDate(d.getDate() + n); d.setMinutes(d.getMinutes() - d.getTimezoneOffset()); return d.toISOString().slice(0,10); };
+const rotulo = v => { const p = v.split("-"); return ["Dom","Seg","Ter","Qua","Qui","Sex","Sáb"][new Date(p[0], p[1]-1, p[2]).getDay()] + " " + p[2] + "/" + p[1] + "/" + p[0]; };
+const dias = (de, ate) => { let h = ""; for (let n = de; n <= ate; n++) { const v = isoDia(n); h += `<option value="${v}">${rotulo(v)}${n === 0 ? " (hoje)" : ""}</option>`; } return h; };
+const hopts = (sel, ini = 300, fim = 1425, p = 15) => {
+  const s = String(sel || "").slice(0,5), L = [];
+  for (let m = ini; m <= fim; m += p) L.push(String(Math.floor(m/60)).padStart(2,"0") + ":" + String(m%60).padStart(2,"0"));
+  if (s && !L.includes(s)) { L.push(s); L.sort(); }
+  return L.map(t => `<option ${t === s ? "selected" : ""}>${t}</option>`).join("");
+};
+$("dia").innerHTML = dias(-14, 60); $("dia").value = isoDia(0);
+$("bd").innerHTML = dias(0, 120);
+$("bi").innerHTML = hopts("12:00"); $("bf").innerHTML = hopts("13:00");
+$("dprev").onclick = () => { if ($("dia").selectedIndex > 0) { $("dia").selectedIndex--; listar(); } };
+$("dnext").onclick = () => { if ($("dia").selectedIndex < $("dia").options.length - 1) { $("dia").selectedIndex++; listar(); } };
+$("dhoje").onclick = () => { $("dia").value = isoDia(0); listar(); };
+
+/* ---------- Login ---------- */
+function abrirPainel() {
+  $("login").hidden = true; $("painel").hidden = false;
+  $("pw").value = ""; $("lmsg").textContent = "";
+  carregaPro().then(listar); carregaZap(); carregaSvc(); carregaSem(); carregaBloq(); carregaPl();
+}
+$("entrar").onclick = async () => {
+  const senha = $("pw").value;
+  if (!senha) { $("lmsg").textContent = "Digite a senha."; return; }
+  $("entrar").disabled = true; $("lmsg").textContent = "Entrando...";
+  try {
+    const { error } = await db.auth.signInWithPassword({ email: EMAIL, password: senha });
+    if (error) {
+      $("lmsg").textContent = error.message.toLowerCase().includes("invalid") ? "Senha incorreta." : "Não foi possível entrar: " + error.message;
+      $("pw").select(); return;
+    }
+    abrirPainel();
+  } catch (e) { $("lmsg").textContent = "Erro de conexão: " + msgErr(e); }
+  finally { $("entrar").disabled = false; }
+};
+$("pw").addEventListener("keydown", e => { if (e.key === "Enter") $("entrar").click(); });
+$("sair").onclick = async () => { await db.auth.signOut(); $("login").hidden = false; $("painel").hidden = true; };
+db.auth.getSession().then(({ data }) => { if (data && data.session) abrirPainel(); });
+
+/* ---------- Abas ---------- */
+document.querySelector(".tabs").onclick = e => {
+  const b = e.target.closest("[data-tab]"); if (!b) return;
+  document.querySelectorAll(".tabs .sm").forEach(x => x.setAttribute("aria-pressed", x === b));
+  document.querySelectorAll(".tab").forEach(t => t.hidden = t.id !== b.dataset.tab);
+  if (b.dataset.tab === "t8") carregaResumo();
+};
+
+/* ---------- Agenda ---------- */
+$("dia").onchange = () => listar();
+async function listar() {
+  $("lista").textContent = "Carregando agendamentos...";
+  try {
+    let q = db.from("agendamentos").select("*").eq("data", $("dia").value);
+    if ($("fp").value) q = q.eq("profissional_id", $("fp").value);
+    const { data, error } = await q.order("hora");
+    if (error) { $("lista").textContent = "Erro ao carregar a agenda: " + error.message; return; }
+    const ag = (data || []).filter(x => !OCULTOS[x.id]).map(x => ({ ...x, status: efetivo(x) })); AG = ag;
+    const ativos = ag.filter(a => a.status !== "cancelado");
+    const fat = ativos.reduce((s, a) => s + Number(a.preco || 0), 0);
+    const cont = s => ag.filter(a => a.status === s).length;
+    $("total").innerHTML = `<div class="chips">
+      <span class="chip"><i style="background:${ST.agendado.c}"></i><b>${cont("agendado")}</b> pendente(s)</span>
+      <span class="chip"><i style="background:${ST.confirmado.c}"></i><b>${cont("confirmado")}</b> confirmado(s)</span>
+      <span class="chip"><i style="background:${ST.concluido.c}"></i><b>${cont("concluido")}</b> concluído(s)</span>
+      <span class="chip">Previsto: <b>${esc(brl(fat))}</b></span></div>${cont("cancelado") ? `<button class="sm limpar" data-limpar="1" type="button">Apagar todos os recusados (${cont("cancelado")})</button>` : ""}`;
+    $("lista").innerHTML = ag.length ? ag.map(x => cardAg(x, false)).join("") : "<p>Nenhum agendamento neste dia.</p>";
+    carregaPend();
+  } catch (e) { $("lista").textContent = "Erro de conexão: " + msgErr(e); }
+}
+var AGP = [];
+function cardAg(a, comData) {
+  const st = ST[a.status] || { t: a.status, c: "#888" };
+  const tel = String(a.telefone || "").replace(/\D/g, "");
+  const prof = PROFS.length > 1 && a.profissional_id ? esc(nomeProf(a.profissional_id)) + " · " : "";
+  const id = esc(a.id);
+  let acoes = "";
+  if (a.status === "agendado") acoes = `<button class="b-ok" data-ac="confirmar" data-id="${id}">Confirmar</button><button class="b-no" data-ac="recusar" data-id="${id}">Recusar</button>`;
+  else if (a.status === "confirmado") acoes = `<button class="b-fim" data-ac="concluir" data-id="${id}">Concluir</button><button class="b-no" data-ac="cancelar" data-id="${id}">Cancelar</button>`;
+  else if (a.status === "cancelado") acoes = `<button class="b-del" data-ac="apagar" data-id="${id}">Apagar</button>`;
+  return `<div class="ag ${a.status === "concluido" || a.status === "cancelado" ? "fechado" : ""}" style="--st:${st.c}">
+    <div class="ag-hora">${comData ? `<small style="display:block;font-size:.7rem;font-weight:600;color:var(--laranja2)">${esc(rotulo(a.data))}</small>` : ""}${esc(String(a.hora || "").slice(0,5))}</div>
+    <div class="ag-info"><div class="ag-nome">${esc(a.nome)}<span class="ag-badge">${esc(st.t)}</span></div>
+      <span class="ag-det">${esc(a.servico)} · ${prof}${esc(brl(Number(a.preco || 0)))}</span>
+      <span class="ag-det"><a href="https://wa.me/55${tel}" target="_blank" rel="noopener noreferrer">${esc(a.telefone)}</a></span></div>
+    ${acoes ? `<div class="ag-acoes">${acoes}</div>` : ""}
+  </div>`;
+}
+async function carregaPend() {
+  try {
+    const { data, error } = await db.from("agendamentos").select("*").eq("status", "agendado").gte("data", hojeLocal()).order("data").order("hora");
+    if (error) { $("pend").innerHTML = `<p class="msg bad">Erro ao buscar pedidos pendentes: ${esc(error.message)}</p>`; return; }
+    AGP = (data || []).filter(x => !CONF[x.id]);
+    $("pend").innerHTML = AGP.length
+      ? `<h3 style="margin:.9rem 0 .2rem;color:var(--laranja2)">🔔 Pedidos aguardando sua resposta (${AGP.length})</h3>` + AGP.map(x => cardAg(x, true)).join("") + `<hr style="border:0;border-top:1px solid var(--line);margin:1rem 0">`
+      : "";
+  } catch (e) { $("pend").innerHTML = ""; }
+}
+setInterval(() => { if (!$("painel").hidden) carregaPend(); }, 30000);
+var CONF = (() => { try { return JSON.parse(localStorage.getItem("confirmados") || "{}"); } catch (e) { return {}; } })();
+const salvaConf = () => { try { localStorage.setItem("confirmados", JSON.stringify(CONF)); } catch (e) {} };
+const efetivo = x => (x.status === "agendado" && CONF[x.id]) ? "confirmado" : x.status;
+var AG = [];
+var OCULTOS = (() => { try { return JSON.parse(localStorage.getItem("ocultos") || "{}"); } catch (e) { return {}; } })();
+const salvaOcultos = () => { try { localStorage.setItem("ocultos", JSON.stringify(OCULTOS)); } catch (e) {} };
+async function apagarIds(ids) {
+  const { data, error } = await db.from("agendamentos").delete().in("id", ids).select();
+  const feitos = new Set((!error && data ? data : []).map(x => String(x.id)));
+  const sobrou = ids.filter(i => !feitos.has(String(i)));
+  if (sobrou.length) {
+    // o banco não deixou apagar: pelo menos tira da tela deste aparelho
+    sobrou.forEach(i => { OCULTOS[i] = 1; }); salvaOcultos();
+    toast("Tirei da tela, mas o banco não permitiu apagar de vez. É preciso liberar a exclusão no Supabase.", false);
+  } else toast(ids.length > 1 ? "Pedidos apagados." : "Pedido apagado.", true);
+  listar();
+}
+const ST = {
+  agendado:  { t: "Pendente",   c: "#d49a35" },
+  confirmado:{ t: "Confirmado", c: "#3fb27f" },
+  concluido: { t: "Concluído",  c: "#7d8cff" },
+  cancelado: { t: "Recusado",   c: "#d9534f" }
+};
+function toast(msg, ok) {
+  let t = $("toast");
+  if (!t) { t = document.createElement("div"); t.id = "toast"; t.setAttribute("role", "status");
+    t.style.cssText = "position:fixed;left:50%;bottom:20px;transform:translateX(-50%);max-width:92vw;padding:.7rem 1rem;border-radius:12px;font-size:.9rem;z-index:99;box-shadow:0 6px 24px rgba(0,0,0,.5)";
+    document.body.appendChild(t); }
+  t.style.background = ok ? "#1f6f4d" : "#8a2b27"; t.style.color = "#fff"; t.textContent = msg; t.hidden = false;
+  clearTimeout(t._t); t._t = setTimeout(() => { t.hidden = true; }, ok ? 3000 : 9000);
+}
+async function mudar(id, status) {
+  const { data, error } = await db.from("agendamentos").update({ status }).eq("id", id).select();
+  const falhou = error || !data || !data.length;
+  if (falhou && status === "confirmado") {
+    // o banco ainda não aceita "confirmado": guarda neste aparelho e segue
+    CONF[id] = 1; salvaConf(); toast("Pedido confirmado!", true); listar(); return true;
+  }
+  if (error) { toast("Não foi possível atualizar: " + error.message, false); return false; }
+  if (!data || !data.length) { toast("O banco não deixou alterar este pedido (permissão).", false); return false; }
+  delete CONF[id]; salvaConf();
+  toast(status === "confirmado" ? "Pedido confirmado!" : status === "concluido" ? "Serviço concluído!" : "Pedido recusado.", true);
+  listar(); return true;
+}
+window.addEventListener("error", ev => toast("Erro na página: " + ev.message, false));
+window.addEventListener("unhandledrejection", ev => toast("Erro: " + msgErr(ev.reason), false));
+async function acaoAg(e) {
+  const b = e.target.closest("[data-ac]"); if (!b) return;
+  const id = b.dataset.id, ac = b.dataset.ac, a = AG.concat(AGP).find(x => String(x.id) === String(id));
+  if (!a) { toast("Pedido não encontrado na lista. Atualize a página.", false); return; }
+  if (ac === "apagar") {
+    if (!confirm("Apagar o pedido de " + a.nome + " (" + brData(a.data) + " às " + String(a.hora || "").slice(0,5) + ")? Isso não pode ser desfeito.")) return;
+    b.disabled = true; apagarIds([id]); return;
+  }
+  if (ac === "recusar" || ac === "cancelar") {
+    // abre o WhatsApp avisando o cliente (precisa ser no clique direto)
+    const tel = String(a.telefone || "").replace(/\D/g, "");
+    const texto = `Olá, ${a.nome}! Infelizmente não conseguimos fazer esse agendamento (${a.servico}, ${brData(a.data)} às ${String(a.hora || "").slice(0,5)}).\n\nMarque outra data ou outro horário pelo nosso site. Obrigado pela compreensão! 🙏\n\n_Barbearia P.B_`;
+    if (tel) window.open("https://wa.me/" + (tel.length <= 11 ? "55" : "") + tel + "?text=" + encodeURIComponent(texto), "_blank", "noopener");
+    else toast("Este cliente não tem WhatsApp cadastrado. O pedido foi recusado, mas avise-o por outro meio.", false);
+    toast("Abrindo o WhatsApp e recusando...", true);
+    b.disabled = true; mudar(id, "cancelado"); return;
+  }
+  if (ac === "confirmar") {
+    // abre o WhatsApp primeiro (o navegador só permite no clique direto)
+    const tel = String(a.telefone || "").replace(/\D/g, "");
+    const p = a.profissional_id ? nomeProf(a.profissional_id) : "";
+    const texto = `Olá, ${a.nome}! ✅ Seu agendamento na *Barbearia P.B* está *confirmado*.\n\n*Serviço:* ${a.servico}${p && PROFS.length > 1 ? "\n*Profissional:* " + p : ""}\n*Data:* ${brData(a.data)}\n*Horário:* ${String(a.hora || "").slice(0,5)}\n\n_Lembrete: tolerância de 5 minutos de atraso._ Te esperamos!`;
+    if (tel) window.open("https://wa.me/" + (tel.length <= 11 ? "55" : "") + tel + "?text=" + encodeURIComponent(texto), "_blank", "noopener");
+    else toast("Este cliente não tem WhatsApp cadastrado.", false);
+    toast("Abrindo o WhatsApp e confirmando...", true);
+    b.disabled = true; await mudar(id, "confirmado");
+  } else if (ac === "concluir") { b.disabled = true; mudar(id, "concluido"); }
+}
+$("lista").onclick = acaoAg;
+$("total").onclick = e => {
+  if (!e.target.closest("[data-limpar]")) return;
+  const ids = AG.filter(x => x.status === "cancelado").map(x => x.id);
+  if (!ids.length) return;
+  if (!confirm("Apagar " + ids.length + " pedido(s) recusado(s) deste dia? Isso não pode ser desfeito.")) return;
+  apagarIds(ids);
+};
+$("pend").onclick = acaoAg;
+
+/* ---------- Resumo (somente leitura: só faz SELECT em agendamentos) ---------- */
+var RES = { per: "mes", off: 0, rows: [] };
+const pad2 = n => String(n).padStart(2, "0");
+const isoDe = d => d.getFullYear() + "-" + pad2(d.getMonth() + 1) + "-" + pad2(d.getDate());
+const rbrl = v => Number(v || 0).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+const LK = "lancamentosPB";
+const lerLocal = () => { try { return JSON.parse(localStorage.getItem(LK) || "[]"); } catch (e) { return []; } };
+var LANC = [], MODO = "db";
+const lerL = () => LANC;
+async function carregaL(F) {
+  try {
+    const { data, error } = await db.from("lancamentos").select("*").gte("data", F.ini).lte("data", F.fim);
+    if (error) throw error;
+    MODO = "db";
+    const loc = lerLocal();
+    if (loc.length) { // passa o que estava salvo só neste aparelho para a base
+      const r = await db.from("lancamentos").insert(loc.map(x => ({ tipo: x.tipo, data: x.data, descricao: x.desc || "", valor: x.valor, qtd: x.qtd || 1 })));
+      if (!r.error) { try { localStorage.removeItem(LK); } catch (e) {} return carregaL(F); }
+    }
+    LANC = (data || []).map(x => ({ id: String(x.id), tipo: x.tipo, data: x.data, desc: x.descricao, valor: Number(x.valor), qtd: x.qtd }));
+  } catch (e) {
+    MODO = "local"; LANC = lerLocal();
+    aviso("rmsg", "A tabela \"lancamentos\" ainda não existe na base. Por enquanto está salvando só neste aparelho.");
+  }
+}
+const gravaL = a => { try { localStorage.setItem(LK, JSON.stringify(a)); return true; } catch (e) { toast("Não consegui salvar neste aparelho.", false); return false; } };
+var EDIT = null;
+const ICO_TES = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:#d49a35"><circle cx="6" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><path d="M20 4 8.12 15.88M14.47 14.48 20 20M8.12 8.12 12 12"/></svg>';
+const ICO_DIN = '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="11" fill="#d9534f"/><text x="12" y="17.5" text-anchor="middle" font-size="15" font-weight="700" font-family="Arial,sans-serif" fill="#fff">$</text></svg>';
+function faixa() {
+  const h = new Date(); h.setHours(12, 0, 0, 0);
+  if (RES.per === "mes") { const y = h.getFullYear() + RES.off; return { ini: y + "-01-01", fim: y + "-12-31", y }; }
+  const ini = new Date(h); ini.setDate(h.getDate() - ((h.getDay() + 6) % 7) + RES.off * 7);
+  const fim = new Date(ini); fim.setDate(ini.getDate() + 6);
+  return { ini: isoDe(ini), fim: isoDe(fim), d0: ini, d1: fim };
+}
+async function carregaResumo() {
+  const cur = $("rp").value;
+  $("rp").innerHTML = '<option value="">Todos</option>' + PROFS.map(p => `<option value="${esc(p.id)}">${esc(p.nome)}</option>`).join("");
+  $("rp").value = cur;
+  if (!$("ld").value) $("ld").value = hojeLocal();
+  $("rmsg").textContent = "";
+  const F = faixa();
+  await carregaL(F);
+  try {
+    let q = db.from("agendamentos").select("data,hora,preco,servico,status,profissional_id").eq("status", "concluido").gte("data", F.ini).lte("data", F.fim);
+    if ($("rp").value) q = q.eq("profissional_id", $("rp").value);
+    const { data, error } = await q;
+    if (error) { RES.rows = []; aviso("rmsg", "Erro ao carregar a agenda: " + error.message); }
+    else RES.rows = data || [];
+  } catch (e) { RES.rows = []; aviso("rmsg", "Erro de conexão: " + msgErr(e)); }
+  desenhaResumo();
+}
+const noPer = (r, per) => r.data >= per[0] && r.data <= per[1];
+const soma = rows => rows.reduce((s, r) => s + Number(r.preco || 0), 0);
+const fmtN = v => Number(v || 0).toLocaleString("pt-BR", { maximumFractionDigits: 0 });
+const rcurto = v => rbrl(v).replace(/,00$/, "");
+function escala(max, inteiro) {
+  if (!(max > 0)) return inteiro ? { topo: 4, passo: 1 } : { topo: 100, passo: 25 };
+  const bruto = max / 4, mag = Math.pow(10, Math.floor(Math.log10(bruto))), n = bruto / mag;
+  let passo = (n <= 1 ? 1 : n <= 2 ? 2 : n <= 5 ? 5 : 10) * mag;
+  if (inteiro) passo = Math.max(1, Math.ceil(passo));
+  return { topo: Math.max(Math.ceil(max / passo), 2) * passo, passo };
+}
+function grafico(o) {
+  const n = o.vals.length, max = Math.max(...o.vals, 0), { topo, passo } = escala(max, o.inteiro);
+  const nt = Math.round(topo / passo), gap = n > 20 ? 2 : 4;
+  let linhas = "", eixo = "";
+  for (let k = 0; k <= nt; k++) {
+    const p = k * passo / topo * 100;
+    linhas += `<i class="${k ? "" : "base"}" style="bottom:${p}%"></i>`;
+    eixo += `<span style="bottom:${p}%">${esc(fmtN(k * passo))}</span>`;
+  }
+  const mostra = n <= 12;
+  const cols = o.vals.map((v, i) => `<div class="gcol${v ? "" : " z"}${i === o.now ? " now" : ""}" data-t="${esc(o.tips[i])}"><div class="gbar" style="height:${v / topo * 100}%">${v && mostra ? `<em>${esc(fmtN(v))}</em>` : ""}</div></div>`).join("");
+  const rot = o.rots.map((t, i) => `<span class="${i === o.now ? "now" : ""}">${n <= 16 || i === 0 || (i + 1) % 5 === 0 ? esc(t) : ""}</span>`).join("");
+  return `<div class="gread">Toque em uma barra para ver o detalhe.</div>
+    <div class="gc"><div class="gy">${eixo}</div><div class="gp"><div class="gl">${linhas}</div><div class="gb" style="--gap:${gap}px">${cols}</div></div><div class="gx" style="--gap:${gap}px">${rot}</div></div>`
+    + (max ? "" : '<p class="gvazio">Nenhum atendimento concluído neste período.</p>');
+}
+const painel = (cls, titulo, sub, tot, totSub, g) => `<section class="rpanel ${cls}"><div class="rhead"><div><h3>${esc(titulo)}</h3><small>${esc(sub)}</small></div><div class="rtot"><b>${esc(tot)}</b><small>${esc(totSub)}</small></div></div>${g}</section>`;
+function rank(itens, cls) {
+  const L = Object.entries(itens).sort((x, y) => y[1] - x[1]).slice(0, 8), mx = L.length ? L[0][1] : 0;
+  if (!L.length) return '<p class="gvazio">Nada neste período.</p>';
+  return '<div class="rk">' + L.map(([n, v]) => `<div class="l"><span class="n" title="${esc(n)}">${esc(n)}</span><span class="t"><u style="width:${mx ? v / mx * 100 : 0}%"></u></span><b>${esc(fmtN(v))}</b></div>`).join("") + "</div>";
+}
+function donut(rec, dsp) {
+  const tot = rec + dsp, pr = tot ? rec / tot * 100 : 0, pd = tot ? 100 - pr : 0;
+  const arc = (p, off, c) => p > 0 ? `<circle cx="21" cy="21" r="15.9155" fill="none" stroke="${c}" stroke-width="6" stroke-dasharray="${p} ${100 - p}" stroke-dashoffset="${-off}"/>` : "";
+  return `<div class="donut"><svg viewBox="0 0 42 42"><circle cx="21" cy="21" r="15.9155" fill="none" stroke="#1b1b1d" stroke-width="6"/>${arc(pd, 0, "#d9534f")}${arc(pr, pd, "#d49a35")}</svg>
+    <div class="lg"><span><i style="background:#d49a35"></i>Receita · ${Math.round(pr)}%</span><span><i style="background:#d9534f"></i>Despesa · ${Math.round(pd)}%</span></div></div>`;
+}
+function desenhaResumo() {
+  const F = faixa(), mesCurto = ["jan", "fev", "mar", "abr", "mai", "jun", "jul", "ago", "set", "out", "nov", "dez"];
+  const hoje = new Date(), dm = x => pad2(x.getDate()) + "/" + pad2(x.getMonth() + 1);
+  const L = lerL().filter(l => l.data >= F.ini && l.data <= F.fim);
+  const rec = [], dsp = [];
+  RES.rows.forEach(r => rec.push({ data: r.data, v: Number(r.preco || 0), q: 1, f: r.servico || "Outros" }));
+  L.forEach(l => l.tipo === "corte" ? rec.push({ data: l.data, v: Number(l.valor || 0), q: Number(l.qtd) || 1, f: l.desc || "Corte (manual)" }) : dsp.push({ data: l.data, v: Number(l.valor || 0), f: l.desc || "Outros" }));
+  let rots = [], longos = [], idx, now = -1, lab;
+  if (RES.per === "mes") {
+    mesCurto.forEach((m, i) => { rots.push(m); longos.push(m.charAt(0).toUpperCase() + m.slice(1) + "/" + F.y); });
+    idx = r => parseInt(r.data.slice(5, 7), 10) - 1;
+    if (F.y === hoje.getFullYear()) now = hoje.getMonth();
+    lab = "Ano " + F.y;
+  } else {
+    const curto = ["Seg", "Ter", "Qua", "Qui", "Sex", "Sáb", "Dom"], longo = ["Segunda", "Terça", "Quarta", "Quinta", "Sexta", "Sábado", "Domingo"];
+    for (let i = 0; i < 7; i++) { const x = new Date(F.d0); x.setDate(x.getDate() + i); rots.push(curto[i]); longos.push(longo[i] + ", " + dm(x)); }
+    idx = r => { const p = r.data.split("-"); return (new Date(p[0], p[1] - 1, p[2]).getDay() + 6) % 7; };
+    if (RES.off === 0) now = (hoje.getDay() + 6) % 7;
+    lab = dm(F.d0) + " a " + dm(F.d1);
+  }
+  $("dlab").textContent = lab;
+  document.querySelectorAll("[data-dp]").forEach(b => b.setAttribute("aria-pressed", b.dataset.dp === RES.per));
+  const n = rots.length, vr = Array(n).fill(0), vd = Array(n).fill(0), vc = Array(n).fill(0);
+  rec.forEach(r => { const i = idx(r); if (i >= 0 && i < n) { vr[i] += r.v; vc[i] += r.q; } });
+  dsp.forEach(r => { const i = idx(r); if (i >= 0 && i < n) vd[i] += r.v; });
+  const tr = vr.reduce((a, b) => a + b, 0), td = vd.reduce((a, b) => a + b, 0), tc = vc.reduce((a, b) => a + b, 0), saldo = tr - td;
+  $("dk").innerHTML =
+    `<div class="dkc rec"><small>Total de receitas</small><b>${esc(rbrl(tr))}</b><span>${tc ? "ticket médio " + esc(rcurto(tr / tc)) : "sem atendimentos"}</span></div>` +
+    `<div class="dkc dsp">${ICO_DIN}<small>Total de despesas</small><b>${esc(rbrl(td))}</b><span>${dsp.length} lançamento${dsp.length === 1 ? "" : "s"}</span></div>` +
+    `<div class="dkc${saldo < 0 ? " neg" : ""}"><small>Saldo</small><b>${esc(rbrl(saldo))}</b><span>receitas − despesas</span></div>` +
+    `<div class="dkc cut">${ICO_TES}<small>Cortes realizados</small><b>${tc}</b><span>${tc === 1 ? "corte" : "cortes"}</span></div>`;
+  const tips = (v, f) => v.map((x, i) => longos[i] + " · " + f(x, i));
+  const fonteR = {}, fonteD = {};
+  rec.forEach(r => fonteR[r.f] = (fonteR[r.f] || 0) + r.v);
+  dsp.forEach(r => fonteD[r.f] = (fonteD[r.f] || 0) + r.v);
+  $("rgraf").innerHTML =
+    painel("ouro", "Total de receitas (R$)", lab, rcurto(tr), "faturado", grafico({ vals: vr, rots, tips: tips(vr, (x, i) => rbrl(x) + " · " + vc[i] + " corte" + (vc[i] === 1 ? "" : "s")), now, inteiro: false })) +
+    painel("verm", "Total de despesas (R$)", lab, rcurto(td), "gasto", grafico({ vals: vd, rots, tips: tips(vd, x => rbrl(x)), now, inteiro: false })) +
+    painel("prata", "Cortes de cabelo", lab, String(tc), tc === 1 ? "corte" : "cortes", grafico({ vals: vc, rots, tips: tips(vc, (x, i) => x + " corte" + (x === 1 ? "" : "s") + " · " + rbrl(vr[i])), now, inteiro: true })) +
+    `<div class="dgrid dois">` +
+    painel("ouro", "Receitas vs. despesas", lab, "", "", donut(tr, td)) +
+    painel("ouro", "Fontes de receita (R$)", lab, "", "", rank(fonteR)) +
+    painel("verm", "Fontes de despesa (R$)", lab, "", "", rank(fonteD)) + `</div>`;
+  listaL(L);
+}
+function listaL(L) {
+  L = L.slice().sort((a, b) => b.data.localeCompare(a.data));
+  $("llist").innerHTML = L.length ? L.map(l => `<div class="lrow">${l.tipo === "corte" ? ICO_TES : ICO_DIN}<div class="li"><b>${esc(l.desc || (l.tipo === "corte" ? "Corte" : "Despesa"))}</b><small>${esc(brData(l.data))}${l.tipo === "corte" ? " · " + (Number(l.qtd) || 1) + " corte(s)" : ""}</small></div><span class="v ${l.tipo === "corte" ? "c" : "d"}">${esc(rbrl(l.valor))}</span><button class="sm" type="button" data-le="${esc(l.id)}">Editar</button><button class="sm b-del" type="button" data-ld="${esc(l.id)}">Apagar</button></div>`).join("") : '<p class="gvazio">Nenhum lançamento manual neste período.</p>';
+}
+function ajustaForm() {
+  const c = $("lt").value === "corte";
+  $("lq").hidden = !c; $("ln").placeholder = c ? "Serviço (ex.: Corte social)" : "Categoria (ex.: Aluguel, Produtos)";
+}
+function limpaForm() {
+  EDIT = null; $("lv").value = ""; $("ln").value = ""; $("lq").value = 1; $("ld").value = hojeLocal();
+  $("lsave").textContent = "Adicionar"; $("lcancel").hidden = true;
+}
+$("lt").onchange = ajustaForm; ajustaForm();
+$("lsave").onclick = async () => {
+  const v = parseFloat($("lv").value), d = $("ld").value, tipo = $("lt").value;
+  if (!d) { aviso("lmsg", "Escolha a data."); return; }
+  if (!(v >= 0) || $("lv").value === "") { aviso("lmsg", "Digite o valor."); return; }
+  const qtd = tipo === "corte" ? Math.max(1, parseInt($("lq").value, 10) || 1) : 0, desc = $("ln").value.trim();
+  $("lsave").disabled = true;
+  try {
+    if (MODO === "db") {
+      const row = { tipo, data: d, descricao: desc, valor: v, qtd };
+      const r = EDIT ? await db.from("lancamentos").update(row).eq("id", EDIT).select() : await db.from("lancamentos").insert(row).select();
+      if (r.error || !r.data || !r.data.length) { aviso("lmsg", "Não foi possível salvar: " + (r.error ? r.error.message : "permissão negada na tabela.")); return; }
+    } else {
+      const item = { id: EDIT || String(Date.now()), tipo, data: d, desc, valor: v, qtd };
+      const a = lerLocal(); if (!gravaL(EDIT ? a.map(x => x.id === EDIT ? item : x) : a.concat(item))) return;
+    }
+    aviso("lmsg", EDIT ? "Lançamento atualizado." : "Lançamento adicionado.", true);
+    limpaForm(); await carregaResumo();
+  } finally { $("lsave").disabled = false; }
+};
+$("lcancel").onclick = () => { limpaForm(); $("lmsg").textContent = ""; };
+$("llist").onclick = e => {
+  const ed = e.target.closest("[data-le]"), dl = e.target.closest("[data-ld]");
+  if (ed) {
+    const l = lerL().find(x => x.id === ed.dataset.le); if (!l) return;
+    EDIT = l.id; $("lt").value = l.tipo; ajustaForm(); $("ld").value = l.data; $("ln").value = l.desc || ""; $("lv").value = l.valor; $("lq").value = l.qtd || 1;
+    $("lsave").textContent = "Salvar alteração"; $("lcancel").hidden = false; $("lsec").scrollIntoView({ behavior: "smooth", block: "start" });
+  } else if (dl) {
+    if (!confirm("Apagar este lançamento?")) return;
+    const id = dl.dataset.ld;
+    (async () => {
+      if (MODO === "db") { const r = await db.from("lancamentos").delete().eq("id", id).select(); if (r.error || !r.data || !r.data.length) { aviso("lmsg", "Não foi possível apagar."); return; } }
+      else gravaL(lerLocal().filter(x => x.id !== id));
+      if (EDIT === id) limpaForm(); carregaResumo();
+    })();
+  }
+};
+$("rgraf").onclick = e => {
+  const c = e.target.closest(".gcol"); if (!c) return;
+  const p = c.closest(".rpanel");
+  p.querySelectorAll(".gcol.sel").forEach(x => x.classList.remove("sel"));
+  c.classList.add("sel");
+  const r = p.querySelector(".gread"); r.textContent = c.dataset.t; r.classList.add("on");
+};
+document.querySelector("#t8 .dbar").onclick = e => {
+  const t = e.target.closest("[data-dp]");
+  if (t) { RES.per = t.dataset.dp; RES.off = 0; carregaResumo(); return; }
+  const b = e.target.closest("#dprv2,#dnx2"); if (!b) return;
+  RES.off += b.id === "dnx2" ? 1 : -1; carregaResumo();
+};
+$("rp").onchange = () => carregaResumo();
+
+/* ---------- Serviços ---------- */
+async function carregaSvc() {
+  const { data, error } = await db.from("servicos").select("*").order("ordem").order("nome");
+  if (error) { aviso("smsg", "Erro ao carregar serviços: " + error.message); return; }
+  $("svl").innerHTML = data.map(s => `
+    <div class="fr" data-id="${esc(s.id)}" data-ordem="${s.ordem}">
+      <input class="n" value="${esc(s.nome)}">
+      <input class="p" type="number" step="0.01" value="${s.preco}" style="max-width:90px">
+      <input class="d" type="number" value="${s.dur}" style="max-width:80px">
+      <label><input class="a" type="checkbox" ${s.ativo ? "checked" : ""}> Ativo</label>
+      <button class="sm" data-act="s">Salvar</button>
+      <button class="sm" data-act="x">Excluir</button>
+    </div>`).join("") || "<p>Nenhum serviço.</p>";
+}
+$("svl").onclick = async e => {
+  const b = e.target.closest("[data-act]"); if (!b) return;
+  const r = b.closest("[data-id]"), id = r.dataset.id;
+  if (b.dataset.act === "x") {
+    if (!confirm("Excluir este serviço?")) return;
+    const { error } = await db.from("servicos").delete().eq("id", id);
+    aviso("smsg", error ? "Erro: " + error.message : "Serviço excluído.", !error);
+  } else {
+    const nome = r.querySelector(".n").value.trim(), preco = Number(r.querySelector(".p").value), dur = parseInt(r.querySelector(".d").value, 10);
+    if (!nome || !(preco >= 0) || !(dur > 0)) { aviso("smsg", "Preencha nome, preço e minutos."); return; }
+    const { error } = await db.from("servicos").update({ nome, preco, dur, ativo: r.querySelector(".a").checked }).eq("id", id);
+    aviso("smsg", error ? "Erro: " + error.message : "Serviço salvo!", !error);
+  }
+  carregaSvc();
+};
+$("sadd").onclick = async () => {
+  const nome = $("sn").value.trim(), preco = Number($("sp").value), dur = parseInt($("sd").value, 10);
+  if (!nome || !(preco >= 0) || !$("sp").value || !(dur > 0)) { aviso("smsg", "Preencha nome, preço e minutos."); return; }
+  const { error } = await db.from("servicos").insert({ nome, preco, dur, ordem: 99 });
+  if (error) { aviso("smsg", "Erro: " + error.message); return; }
+  $("sn").value = $("sp").value = $("sd").value = "";
+  aviso("smsg", "Serviço adicionado!", true); carregaSvc();
+};
+
+/* ---------- Horários da semana ---------- */
+async function carregaSem() {
+  const [w, c] = await Promise.all([
+    db.from("horarios_semana").select("*"),
+    db.from("configuracoes").select("passo").eq("id", 1).maybeSingle()]);
+  if (w.error) { aviso("hmsg", "Erro: " + w.error.message); return; }
+  const m = {}; (w.data || []).forEach(r => m[r.dia] = r);
+  $("sem").innerHTML = DIAS.map((n, i) => {
+    const r = m[i] || { aberto: i !== 0, abre: "09:00", fecha: "19:00" };
+    return `<div class="fr" data-dia="${i}">
+      <label style="min-width:100px"><input class="o" type="checkbox" ${r.aberto ? "checked" : ""}> ${n}</label>
+      <select class="ab">${hopts(r.abre)}</select>
+      <select class="fe">${hopts(r.fecha)}</select></div>`;
+  }).join("");
+  $("passo").value = (c.data && c.data.passo) || 30;
+}
+$("ssem").onclick = async () => {
+  const linhas = [...document.querySelectorAll("#sem [data-dia]")].map(r => ({
+    dia: +r.dataset.dia, aberto: r.querySelector(".o").checked,
+    abre: r.querySelector(".ab").value, fecha: r.querySelector(".fe").value }));
+  if (linhas.some(l => l.aberto && (!l.abre || !l.fecha || l.abre >= l.fecha))) { aviso("hmsg", "Confira: a abertura deve ser antes do fechamento."); return; }
+  const passo = parseInt($("passo").value, 10);
+  if (!(passo >= 5)) { aviso("hmsg", "Intervalo inválido."); return; }
+  const a = await db.from("horarios_semana").upsert(linhas.map(l => ({ ...l, abre: l.abre || "09:00", fecha: l.fecha || "19:00" })));
+  const b = await db.from("configuracoes").upsert({ id: 1, passo });
+  const erro = a.error || b.error;
+  aviso("hmsg", erro ? "Erro: " + erro.message : "Horários salvos!", !erro);
+};
+
+/* ---------- Bloqueios ---------- */
+$("bt").onchange = () => { $("bh").hidden = $("bt").checked; };
+const MES_TAG = "Mês fechado";
+const nomeMes = ym => { const p = ym.split("-"); const t = new Date(+p[0], +p[1] - 1, 1, 12).toLocaleDateString("pt-BR", { month: "long", year: "numeric" }); return t.charAt(0).toUpperCase() + t.slice(1); };
+(function () {
+  const h = new Date(); let o = "";
+  for (let n = 0; n <= 12; n++) { const d = new Date(h.getFullYear(), h.getMonth() + n, 1, 12); const v = d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0"); o += `<option value="${v}">${esc(nomeMes(v))}</option>`; }
+  $("bmes").innerHTML = o;
+})();
+async function carregaBloq() {
+  const { data, error } = await db.from("bloqueios").select("*").gte("data", hojeLocal()).order("data").order("inicio");
+  if (error) { aviso("bmsg", "Erro: " + error.message); return; }
+  const meses = {}, outros = [];
+  (data || []).forEach(b => {
+    if (!b.inicio && String(b.motivo || "").startsWith(MES_TAG)) { const ym = b.data.slice(0, 7); (meses[ym] = meses[ym] || []).push(b); }
+    else outros.push(b);
+  });
+  const hm = Object.keys(meses).sort().map(ym => `
+    <div class="row"><div><b>${esc(nomeMes(ym))}</b> <small>mês fechado · ${meses[ym].length} dia(s) bloqueado(s)</small></div>
+      <button class="sm" data-mes="${esc(ym)}">Reabrir mês</button></div>`).join("");
+  const ho = outros.map(b => `
+    <div class="row"><div><b>${b.data.split("-").reverse().join("/")}</b>
+      ${b.inicio ? String(b.inicio).slice(0,5) + " às " + String(b.fim).slice(0,5) : "Dia inteiro"}
+      <small>${esc(b.motivo)}</small></div>
+      <button class="sm" data-del="${esc(b.id)}">Remover</button></div>`).join("");
+  $("bl").innerHTML = (hm + ho) || "<p>Nenhum bloqueio.</p>";
+}
+$("bl").onclick = async e => {
+  const mm = e.target.closest("[data-mes]");
+  if (mm) {
+    const ym = mm.dataset.mes, p = ym.split("-"), ult = new Date(+p[0], +p[1], 0).getDate();
+    if (!confirm("Reabrir " + nomeMes(ym) + "? Os dias voltam a aceitar agendamentos.")) return;
+    const r = await db.from("bloqueios").delete().is("inicio", null).like("motivo", MES_TAG + "%").gte("data", ym + "-01").lte("data", ym + "-" + String(ult).padStart(2, "0"));
+    aviso("bmmsg", r.error ? "Erro: " + r.error.message : nomeMes(ym) + " reaberto.", !r.error);
+    carregaBloq(); return;
+  }
+  const b = e.target.closest("[data-del]"); if (!b) return;
+  const { error } = await db.from("bloqueios").delete().eq("id", b.dataset.del);
+  if (error) aviso("bmsg", "Erro: " + error.message); else carregaBloq();
+};
+$("bmadd").onclick = async () => {
+  const ym = $("bmes").value; if (!ym) { aviso("bmmsg", "Escolha o mês."); return; }
+  const p = ym.split("-"), ult = new Date(+p[0], +p[1], 0).getDate(), hoje = hojeLocal(), dias = [];
+  for (let d = 1; d <= ult; d++) { const iso = ym + "-" + String(d).padStart(2, "0"); if (iso >= hoje) dias.push(iso); }
+  if (!dias.length) { aviso("bmmsg", "Este mês já passou."); return; }
+  $("bmadd").disabled = true;
+  try {
+    const ag = await db.from("agendamentos").select("id").in("status", ["agendado", "confirmado"]).gte("data", dias[0]).lte("data", dias[dias.length - 1]);
+    const qtd = ag.data ? ag.data.length : 0;
+    if (!confirm("Fechar " + nomeMes(ym) + "? Ninguém poderá agendar nesse mês." + (qtd ? "\n\nAtenção: já existem " + qtd + " agendamento(s) nesse mês. Eles não serão cancelados." : ""))) return;
+    const ex = await db.from("bloqueios").select("data").is("inicio", null).gte("data", dias[0]).lte("data", dias[dias.length - 1]);
+    const ja = new Set((ex.data || []).map(r => r.data));
+    const motivo = MES_TAG + ($("bmm").value.trim() ? " · " + $("bmm").value.trim() : "");
+    const novos = dias.filter(x => !ja.has(x)).map(data => ({ data, inicio: null, fim: null, motivo }));
+    if (!novos.length) { aviso("bmmsg", "Todos os dias de " + nomeMes(ym) + " já estão bloqueados."); return; }
+    const { error } = await db.from("bloqueios").insert(novos);
+    if (error) { aviso("bmmsg", "Erro: " + error.message); return; }
+    $("bmm").value = ""; aviso("bmmsg", nomeMes(ym) + " fechado!", true); carregaBloq();
+  } catch (e) { aviso("bmmsg", "Erro de conexão: " + msgErr(e)); }
+  finally { $("bmadd").disabled = false; }
+};
+$("badd").onclick = async () => {
+  const inteiro = $("bt").checked, data = $("bd").value;
+  if (!data) { aviso("bmsg", "Escolha o dia."); return; }
+  if (!inteiro && (!$("bi").value || !$("bf").value || $("bi").value >= $("bf").value)) { aviso("bmsg", "Informe início e fim (início antes do fim)."); return; }
+  const { error } = await db.from("bloqueios").insert({
+    data, inicio: inteiro ? null : $("bi").value, fim: inteiro ? null : $("bf").value, motivo: $("bm").value.trim() });
+  if (error) { aviso("bmsg", "Erro: " + error.message); return; }
+  $("bm").value = ""; aviso("bmsg", "Bloqueio salvo!", true); carregaBloq();
+};
+
+/* ---------- WhatsApp ---------- */
+async function carregaZap() {
+  const { data, error } = await db.from("configuracoes").select("whatsapp").eq("id", 1).maybeSingle();
+  if (error) { aviso("zmsg", "Não foi possível carregar o WhatsApp: " + error.message); return; }
+  $("zap").value = (data && data.whatsapp) || "";
+}
+$("salvaZap").onclick = async () => {
+  $("salvaZap").disabled = true;
+  try {
+    const { error } = await db.from("configuracoes").upsert({ id: 1, whatsapp: $("zap").value.trim() });
+    aviso("zmsg", error ? "Não foi possível salvar: " + error.message : "WhatsApp salvo!", !error);
+  } catch (e) { aviso("zmsg", "Erro de conexão: " + msgErr(e)); }
+  finally { $("salvaZap").disabled = false; }
+};
+
+/* ---------- Planos ---------- */
+function umMesDepois() {
+  const h = new Date(), d = new Date(h.getFullYear(), h.getMonth() + 1, 1);
+  const ult = new Date(d.getFullYear(), d.getMonth() + 1, 0).getDate();
+  d.setDate(Math.min(h.getDate(), ult));
+  return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
+}
+const brData = v => String(v).split("-").reverse().join("/");
+async function carregaPl() {
+  const [a, b] = await Promise.all([
+    db.from("planos").select("*").order("ordem").order("dias"),
+    db.from("planos_clientes").select("*").order("criado_em", { ascending: false })]);
+  if (a.error || b.error) { aviso("plmsg", "Erro: " + msgErr(a.error || b.error) + " (o SQL dos planos já foi executado?)"); return; }
+  $("pll").innerHTML = (a.data || []).map(p => `
+    <div class="fr" data-id="${esc(p.id)}">
+      <input class="n" value="${esc(p.nome)}">
+      <input class="p" type="number" step="0.01" value="${p.preco}" style="max-width:90px">
+      <input class="d" type="number" value="${p.dias}" style="max-width:70px">
+      <input class="m" type="number" value="${p.dur ?? 30}" title="Minutos de cada corte" style="max-width:70px">
+      <label><input class="a" type="checkbox" ${p.ativo ? "checked" : ""}> Ativo</label>
+      <button class="sm" data-act="s">Salvar</button>
+      <button class="sm" data-act="x">Excluir</button>
+    </div>`).join("") || "<p>Nenhum plano.</p>";
+  $("pcl").innerHTML = (b.data || []).map(c => {
+    const tel = String(c.telefone || "").replace(/\D/g, "");
+    const msg = `Pagamento confirmado! Seu plano ${c.plano_nome} está ativo (${c.dias_total} agendamentos). Seu código: ${c.codigo}${c.validade ? " (válido até " + brData(c.validade) + ")" : ""}. Use esse código e este WhatsApp para agendar no site.`;
+    const acoes = c.status === "pendente"
+      ? `<button class="sm" data-ca="ativar" data-id="${esc(c.id)}">Confirmar pagamento</button>`
+      : c.status === "ativo"
+        ? `<button class="sm" data-ca="wa" data-wa="${esc("https://wa.me/55" + tel + "?text=" + encodeURIComponent(msg))}">Enviar código</button> <button class="sm" data-ca="fim" data-id="${esc(c.id)}">Encerrar</button>` : "";
+    return `<div class="row ${c.status === "encerrado" ? "cancelado" : ""}"><div><b>${esc(c.nome)}</b> · ${esc(c.plano_nome)}
+      <small>${esc(c.telefone)} · usou ${c.dias_usados}/${c.dias_total} · ${esc(c.status)}${c.codigo ? " · código " + esc(c.codigo) : ""}${c.validade ? " · válido até " + brData(c.validade) : ""}</small></div><div>${acoes}</div></div>`;
+  }).join("") || "<p>Nenhum cliente com plano ainda.</p>";
+}
+$("pll").onclick = async e => {
+  const b = e.target.closest("[data-act]"); if (!b) return;
+  const r = b.closest("[data-id]"), id = r.dataset.id;
+  if (b.dataset.act === "x") {
+    if (!confirm("Excluir este plano? Clientes que já compraram continuam com o saldo.")) return;
+    const { error } = await db.from("planos").delete().eq("id", id);
+    aviso("plmsg", error ? "Erro: " + error.message : "Plano excluído.", !error);
+  } else {
+    const nome = r.querySelector(".n").value.trim(), preco = Number(r.querySelector(".p").value), dias = parseInt(r.querySelector(".d").value, 10), dur = parseInt(r.querySelector(".m").value, 10);
+    if (!nome || !(preco >= 0) || !(dias > 0) || !(dur > 0)) { aviso("plmsg", "Preencha nome, preço, dias e minutos."); return; }
+    const { error } = await db.from("planos").update({ nome, preco, dias, dur, ativo: r.querySelector(".a").checked }).eq("id", id);
+    aviso("plmsg", error ? "Erro: " + error.message : "Plano salvo!", !error);
+  }
+  carregaPl();
+};
+$("pladd").onclick = async () => {
+  const nome = $("pln").value.trim(), preco = Number($("plp").value), dias = parseInt($("pld").value, 10), dur = parseInt($("plm").value, 10);
+  if (!nome || !$("plp").value || !(preco >= 0) || !(dias > 0) || !(dur > 0)) { aviso("plmsg", "Preencha nome, preço, dias e minutos."); return; }
+  const { error } = await db.from("planos").insert({ nome, preco, dias, dur });
+  if (error) { aviso("plmsg", "Erro: " + error.message); return; }
+  $("pln").value = $("plp").value = $("pld").value = $("plm").value = "";
+  aviso("plmsg", "Plano adicionado!", true); carregaPl();
+};
+$("pcl").onclick = async e => {
+  const b = e.target.closest("[data-ca]"); if (!b) return;
+  if (b.dataset.ca === "wa") { window.open(b.dataset.wa, "_blank", "noopener"); return; }
+  const upd = b.dataset.ca === "ativar"
+    ? { status: "ativo", codigo: String(100000 + (crypto.getRandomValues(new Uint32Array(1))[0] % 900000)), validade: umMesDepois() }
+    : { status: "encerrado" };
+  if (b.dataset.ca === "fim" && !confirm("Encerrar este plano? O cliente perde o saldo restante.")) return;
+  const { error } = await db.from("planos_clientes").update(upd).eq("id", b.dataset.id);
+  if (error) { aviso("plmsg", "Erro: " + error.message); return; }
+  carregaPl();
+};
+
+/* ---------- Profissionais ---------- */
+var PROFS = [];
+const nomeProf = id => (PROFS.find(p => p.id === id) || {}).nome || "";
+async function carregaPro() {
+  const { data, error } = await db.from("profissionais").select("*").order("ordem").order("nome");
+  if (error) { aviso("pmsg", "Erro ao carregar profissionais: " + error.message); return; }
+  PROFS = data || [];
+  const cur = $("fp").value;
+  $("fp").innerHTML = '<option value="">Todos</option>' + PROFS.map(p => `<option value="${esc(p.id)}">${esc(p.nome)}</option>`).join("");
+  $("fp").value = cur;
+  $("pfl").innerHTML = PROFS.map(p => `
+    <div class="fr" data-id="${esc(p.id)}">
+      <input class="n" value="${esc(p.nome)}" placeholder="Nome">
+      <input class="w" type="tel" value="${esc(p.whatsapp)}" placeholder="(19) 90000-0000">
+      <label><input class="a" type="checkbox" ${p.ativo ? "checked" : ""}> Ativo</label>
+      <button class="sm" data-act="s">Salvar</button>
+      <button class="sm" data-act="x">Excluir</button>
+    </div>`).join("") || "<p>Nenhum profissional.</p>";
+}
+$("fp").onchange = () => listar();
+$("pfl").onclick = async e => {
+  const b = e.target.closest("[data-act]"); if (!b) return;
+  const r = b.closest("[data-id]"), id = r.dataset.id;
+  if (b.dataset.act === "x") {
+    if (!confirm("Excluir este profissional? Os agendamentos dele continuam salvos, mas ficam sem nome.")) return;
+    const { error } = await db.from("profissionais").delete().eq("id", id);
+    aviso("pmsg", error ? "Erro: " + error.message : "Profissional excluído.", !error);
+  } else {
+    const nome = r.querySelector(".n").value.trim();
+    if (!nome) { aviso("pmsg", "Digite o nome."); return; }
+    const { error } = await db.from("profissionais").update({ nome, whatsapp: r.querySelector(".w").value.trim(), ativo: r.querySelector(".a").checked }).eq("id", id);
+    aviso("pmsg", error ? "Erro: " + error.message : "Profissional salvo!", !error);
+  }
+  carregaPro();
+};
+$("padd").onclick = async () => {
+  const nome = $("pn").value.trim();
+  if (!nome) { aviso("pmsg", "Digite o nome."); return; }
+  const { error } = await db.from("profissionais").insert({ nome, whatsapp: $("pw2").value.trim(), ordem: 99 });
+  if (error) { aviso("pmsg", "Erro: " + error.message); return; }
+  $("pn").value = $("pw2").value = "";
+  aviso("pmsg", "Profissional adicionado!", true); carregaPro();
+};
+</script>
+<script>
+/* brilhos que nascem só nas partes douradas e claras da logo (estrelas, letras, escudo) */
+(function(){
+  var w=document.querySelector(".logo-wrap"),img=w&&w.querySelector(".logo");
+  if(!w||!img||(window.matchMedia&&matchMedia("(prefers-reduced-motion: reduce)").matches))return;
+  var pts=[];
+  function prep(){
+    try{
+      var W=140,H=Math.max(1,Math.round(W*img.naturalHeight/img.naturalWidth)),c=document.createElement("canvas");
+      c.width=W;c.height=H;var x=c.getContext("2d");x.drawImage(img,0,0,W,H);
+      var d=x.getImageData(0,0,W,H).data;
+      for(var i=0;i<W*H;i++){var r=d[i*4],g=d[i*4+1],b=d[i*4+2];
+        if(r>170&&g>115&&r>=g&&g>=b*0.9&&(r-b)>40)pts.push([(i%W)/W*100,Math.floor(i/W)/H*100]);}
+    }catch(e){pts=[];}
+  }
+  function spawn(){
+    if(document.hidden||pts.length<5)return;
+    var p=pts[Math.floor(Math.random()*pts.length)],s=document.createElement("span");
+    s.className="logo-sp";s.style.left=p[0]+"%";s.style.top=p[1]+"%";
+    s.style.setProperty("--s",(9+Math.random()*13).toFixed(0)+"px");
+    s.addEventListener("animationend",function(){s.remove();});w.appendChild(s);
+  }
+  function start(){prep();setInterval(spawn,380);}
+  if(img.complete&&img.naturalWidth)start();else img.addEventListener("load",start);
+})();
+</script>
+</body>
+</html>
